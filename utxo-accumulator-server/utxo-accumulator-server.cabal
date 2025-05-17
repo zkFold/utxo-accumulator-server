@@ -1,0 +1,97 @@
+cabal-version: 3.8
+name: utxo-accumulator-server
+version: 0.1.0.0
+-- synopsis:
+-- description:
+license: MIT
+license-file: LICENSE
+maintainer: info@zkfold.io
+-- copyright:
+build-type: Simple
+extra-doc-files: CHANGELOG.md
+
+common common
+  default-language: GHC2021
+  default-extensions:
+    DataKinds
+    DeriveAnyClass
+    DerivingStrategies
+    DerivingVia
+    GADTs
+    LambdaCase
+    MultiWayIf
+    OverloadedStrings
+    RecordWildCards
+    RoleAnnotations
+    TemplateHaskell
+    TypeFamilies
+    TypeFamilyDependencies
+    UndecidableInstances
+    UnicodeSyntax
+    ViewPatterns
+
+  ghc-options:
+    -Wall
+    -Wincomplete-uni-patterns
+    -Wunused-packages
+
+library
+  import: common
+  exposed-modules:
+
+  other-modules:
+    PackageInfo_utxo_accumulator_server
+
+  autogen-modules:
+    PackageInfo_utxo_accumulator_server
+
+  -- other-modules:
+  -- other-extensions:
+  build-depends:
+    aeson,
+    atlas-cardano,
+    base,
+    binary,
+    bytestring,
+    cardano-api,
+    data-default,
+    deriving-aeson,
+    envy,
+    fast-logger,
+    filepath,
+    fmt,
+    http-types,
+    insert-ordered-containers,
+    lens,
+    mtl,
+    openapi3,
+    optparse-applicative,
+    resource-pool,
+    servant-foreign,
+    servant-openapi3,
+    servant-server,
+    sqlite-simple,
+    stm,
+    swagger2,
+    text,
+    time,
+    time-manager,
+    utxo-accumulator-api,
+    wai,
+    wai-extra,
+    warp,
+    yaml,
+
+  hs-source-dirs: src
+
+executable utxo-accumulator-server
+  import: common
+  main-is: Main.hs
+  -- other-modules:
+  -- other-extensions:
+  build-depends:
+    base,
+    optparse-applicative,
+    utxo-accumulator-server
+
+  hs-source-dirs: app

@@ -1,0 +1,125 @@
+name: Haskell CI
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+    - name: Check source code is formatted correctly (fourmolu)
+      uses: haskell-actions/run-fourmolu@v11
+      with:
+        version: "0.16.2.0"
+    - name: Check cabal file is formatted correctly
+      uses: tfausak/cabal-gild-setup-action@v2
+    - name: Check cabal file is formatted correctly
+      run: |
+        cabal-gild --input zkfold-smart-wallet-api/smart-wallet-api.cabal --mode check
+        cabal-gild --input zkfold-smart-wallet-server-lib/smart-wallet-server-lib.cabal --mode check
+    - name: hlint
+      run: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
+    - name: Install dependencies (apt-get)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+            autoconf \
+            automake \
+            build-essential \
+            ca-certificates \
+            chrony \
+            dpkg-dev \
+            gcc \
+            gnupg \
+            g++ \
+            hlint \
+            libc6-dev \
+            libncursesw5 \
+            libffi-dev \
+            libgmp-dev \
+            liblzma-dev \
+            libnuma-dev \
+            libpq-dev \
+            libssl-dev \
+            libsystemd-dev \
+            libtinfo-dev \
+            libtool \
+            netbase \
+            pkg-config \
+            procps \
+            tmux \
+            xz-utils \
+            zlib1g-dev
+    - name: Setup haskell tooling
+      uses: haskell-actions/setup@v2
+      with:
+        ghc-version: '9.6.7'
+        cabal-version: '3.14.1.1'
+        enable-stack: true
+        stack-version: '2.9'
+    - name: Setup cache
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-cabal
+      with:
+        path: ~/.cabal
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Install LIBSODIUM
+      run: |
+        git clone https://github.com/input-output-hk/libsodium
+        cd libsodium
+        git checkout dbb48cc
+        ./autogen.sh
+        ./configure
+        make
+        sudo make install
+        sudo ldconfig
+    - name: Install SEPC256K1
+      run: |
+        git clone https://github.com/bitcoin-core/secp256k1
+        cd secp256k1
+        git checkout ac83be33d0956faf6b7f61a60ab524ef7d6a473a
+        ./autogen.sh
+        ./configure --prefix=/usr --enable-module-schnorrsig --enable-experimental
+        make
+        sudo make install
+        sudo ldconfig
+    - name: Install BLST
+      run: |
+        : ${BLST_VERSION:='v0.3.11'}
+        git clone --depth 1 --branch ${BLST_VERSION} https://github.com/supranational/blst
+        cd blst
+        ./build.sh
+        cat > libblst.pc << EOF
+        prefix=/usr/local
+        exec_prefix=\${prefix}
+        libdir=\${exec_prefix}/lib
+        includedir=\${prefix}/include
+
+        Name: libblst
+        Description: Multilingual BLS12-381 signature library
+        URL: https://github.com/supranational/blst
+        Version: ${BLST_VERSION#v}
+        Cflags: -I\${includedir}
+        Libs: -L\${libdir} -lblst
+        EOF
+        sudo cp libblst.pc /usr/local/lib/pkgconfig/
+        sudo cp bindings/blst_aux.h bindings/blst.h bindings/blst.hpp  /usr/local/include/
+        sudo cp libblst.a /usr/local/lib
+        sudo chmod u=rw,go=r /usr/local/{lib/{libblst.a,pkgconfig/libblst.pc},include/{blst.{h,hpp},blst_aux.h}}
+    - name: Update dependencies (cabal)
+      run: cabal update
+    - name: Build all targets (cabal)
+      run: cabal build --enable-tests --enable-benchmarks all
+    - name: Symlink cardano-node binaries
+      run: cabal install --package-env=$(pwd) --overwrite-policy=always cardano-cli cardano-node
