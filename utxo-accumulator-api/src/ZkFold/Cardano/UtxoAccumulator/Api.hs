@@ -64,7 +64,7 @@ addUtxo gyServer (addressToPlutus -> recipient) r = do
       script :: GYBuildPlutusScript 'PlutusV3
       script = GYInScript @_ @PlutusV3 $ scriptFromPlutus $ utxoAccumulatorCompiled params
   addrAcc <- addressFromPlutus' $ fromJust maybeNextAddress
-  pure $
+  return $
     mustHaveInput
       GYTxIn
         { gyTxInTxOutRef = fromRight (error "Parsing reference failed.") $ txOutRefFromPlutus stateRef
@@ -106,7 +106,7 @@ switchAccumulator = do
       script :: GYBuildPlutusScript 'PlutusV3
       script = GYInScript @_ @PlutusV3 $ scriptFromPlutus $ utxoAccumulatorCompiled params
   addrAcc <- addressFromPlutus' $ fromJust maybeNextAddress
-  pure $
+  return $
     mustHaveInput
       GYTxIn
         { gyTxInTxOutRef = fromRight (error "Parsing reference failed.") $ txOutRefFromPlutus stateRef
@@ -139,7 +139,7 @@ removeUtxo = do
       script = GYInScript @_ @PlutusV3 $ scriptFromPlutus $ utxoAccumulatorCompiled params
   addrAcc <- addressFromPlutus' $ fromJust maybeNextAddress
   addrRecipient <- addressFromPlutus' recipient
-  pure $
+  return $
     mustHaveInput
       GYTxIn
         { gyTxInTxOutRef = fromRight (error "Parsing reference failed.") $ txOutRefFromPlutus stateRef
