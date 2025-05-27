@@ -17,13 +17,9 @@ import ZkFold.Cardano.UPLC.UtxoAccumulator (
   UtxoAccumulatorParameters (..),
   utxoAccumulatorCompiled,
  )
-import ZkFold.Cardano.UtxoAccumulator.Constants (M, N, protocolStakingCredential)
+import ZkFold.Cardano.UtxoAccumulator.Constants (protocolStakingCredential)
+import ZkFold.Cardano.UtxoAccumulator.Precompute qualified as Precompute
 import ZkFold.Data.Vector (init, last)
-import ZkFold.Symbolic.Examples.UtxoAccumulator (
-  accumulationGroupElements,
-  distributionGroupElements,
- )
-import qualified ZkFold.Symbolic.Examples.UtxoAccumulator as S
 
 utxoAccumulatorAddress :: UtxoAccumulatorParameters -> Address
 utxoAccumulatorAddress par =
@@ -32,8 +28,9 @@ utxoAccumulatorAddress par =
 
 utxoAccumulatorParametersFromAddress :: Value -> Address -> Maybe UtxoAccumulatorParameters
 utxoAccumulatorParametersFromAddress v addr =
-  find (\par -> utxoAccumulatorAddress par == addr) $
-    distributionParameters v ++ accumulationParameters v
+  find (\par -> utxoAccumulatorAddress par == addr)
+    $ distributionParameters v
+    ++ accumulationParameters v
 
 distributionParameters :: Value -> [UtxoAccumulatorParameters]
 distributionParameters v =
@@ -41,8 +38,8 @@ distributionParameters v =
       lastDistPar =
         let maybeSwitchAddress = Nothing
             maybeNextAddress = Nothing
-            currentGroupElement = convertG1 $ last $ distributionGroupElements @N @M
-            switchGroupElement = convertG1 $ S.switchGroupElement @N @M
+            currentGroupElement = convertG1 $ last Precompute.distributionGroupElements
+            switchGroupElement = convertG1 Precompute.switchGroupElement
             accumulationValue = v
          in UtxoAccumulatorParameters {..}
 
@@ -51,7 +48,7 @@ distributionParameters v =
    in foldr'
         (\g acc -> prec (head acc) g : acc)
         [lastDistPar]
-        (map convertG1 $ toList $ init $ distributionGroupElements @N @M)
+        (map convertG1 $ toList $ init $ Precompute.distributionGroupElements)
 
 accumulationParameters :: Value -> [UtxoAccumulatorParameters]
 accumulationParameters v =
@@ -59,8 +56,8 @@ accumulationParameters v =
       lastAccPar =
         let maybeSwitchAddress = Just $ utxoAccumulatorAddress $ head $ distributionParameters v
             maybeNextAddress = Nothing
-            currentGroupElement = convertG1 $ last $ accumulationGroupElements @N @M
-            switchGroupElement = convertG1 $ S.switchGroupElement @N @M
+            currentGroupElement = convertG1 $ last Precompute.accumulationGroupElements
+            switchGroupElement = convertG1 Precompute.switchGroupElement
             accumulationValue = v
          in UtxoAccumulatorParameters {..}
 
@@ -69,4 +66,4 @@ accumulationParameters v =
    in foldr'
         (\g acc -> prec (head acc) g : acc)
         [lastAccPar]
-        (map convertG1 $ toList $ init $ accumulationGroupElements @N @M)
+        (map convertG1 $ toList $ init Precompute.accumulationGroupElements)

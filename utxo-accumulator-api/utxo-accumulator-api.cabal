@@ -42,6 +42,7 @@ library
     ZkFold.Cardano.UtxoAccumulator.Api.Utils
     ZkFold.Cardano.UtxoAccumulator.Constants
     ZkFold.Cardano.UtxoAccumulator.Datum
+    ZkFold.Cardano.UtxoAccumulator.Precompute
     ZkFold.Cardano.UtxoAccumulator.Redeemer
     ZkFold.Cardano.UtxoAccumulator.ScriptParameters
     ZkFold.Cardano.UtxoAccumulator.Types
@@ -63,6 +64,7 @@ library
     containers,
     data-default,
     deriving-aeson,
+    file-embed,
     http-types,
     lens,
     mime-mail,

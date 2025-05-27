@@ -2,41 +2,42 @@ module ZkFold.Cardano.UtxoAccumulator.Api (
   initAccumulator,
   addUtxo,
   switchAccumulator,
-  removeUtxo
+  removeUtxo,
 ) where
 
 import Control.Monad.Reader (ask)
 import Data.Either (fromRight)
 import Data.Maybe (fromJust)
-import GeniusYield.TxBuilder (GYTxSkeleton, mustHaveInput, mustHaveOutput, mustMint, addressFromPlutus')
+import GeniusYield.TxBuilder (GYTxSkeleton, addressFromPlutus', mustHaveInput, mustHaveOutput, mustMint)
 import GeniusYield.Types
 import PlutusLedgerApi.V3 (Value)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Cardano.UPLC.UtxoAccumulator (UtxoAccumulatorParameters (..), UtxoAccumulatorRedeemer (..), utxoAccumulatorCompiled)
 import ZkFold.Cardano.UtxoAccumulator.Api.Utils (getOutput, getState)
-import ZkFold.Cardano.UtxoAccumulator.Constants (serverFee, threadToken, threadTokenName, threadTokenPolicy, protocolFee, protocolTreasuryAddress, serverDeposit, utxoAccumulatorSetupBytesInit)
-import ZkFold.Cardano.UtxoAccumulator.Redeemer (mkAddUtxo, mkRemoveUtxo)
-import ZkFold.Cardano.UtxoAccumulator.ScriptParameters (utxoAccumulatorParametersFromAddress, accumulationParameters, utxoAccumulatorAddress)
-import ZkFold.Cardano.UtxoAccumulator.Types (UtxoAccumulatorQueryMonad)
+import ZkFold.Cardano.UtxoAccumulator.Constants (protocolFee, protocolTreasuryAddress, serverDeposit, serverFee, threadToken, threadTokenName, threadTokenPolicy, utxoAccumulatorSetupBytesInit)
 import ZkFold.Cardano.UtxoAccumulator.Datum (updateDatum)
+import ZkFold.Cardano.UtxoAccumulator.Redeemer (mkAddUtxo, mkRemoveUtxo)
+import ZkFold.Cardano.UtxoAccumulator.ScriptParameters (accumulationParameters, utxoAccumulatorAddress, utxoAccumulatorParametersFromAddress)
+import ZkFold.Cardano.UtxoAccumulator.Types (UtxoAccumulatorQueryMonad)
+import ZkFold.Cardano.UtxoAccumulator.Types.Context (Context (..))
 
 initAccumulator ::
-  (UtxoAccumulatorQueryMonad m) =>
+  UtxoAccumulatorQueryMonad m =>
   Value ->
   m (GYTxSkeleton 'PlutusV2)
 initAccumulator v = do
-  ttRef <- ask
-  let t = valueSingleton (threadToken ttRef) 1
+  Context {..} <- ask
+  let t = valueSingleton (threadToken ctxThreadTokenRef) 1
       params = head $ accumulationParameters v
   accAddr <- addressFromPlutus' $ utxoAccumulatorAddress params
   return $
     mustHaveInput
       GYTxIn
-        { gyTxInTxOutRef = ttRef
+        { gyTxInTxOutRef = ctxThreadTokenRef
         , gyTxInWitness = GYTxInWitnessKey
         }
-      <> mustMint (GYBuildPlutusScript $ GYBuildPlutusScriptInlined $ threadTokenPolicy ttRef) unitRedeemer threadTokenName 1
+      <> mustMint (GYBuildPlutusScript $ GYBuildPlutusScriptInlined $ threadTokenPolicy ctxThreadTokenRef) unitRedeemer threadTokenName 1
       <> mustHaveOutput
         GYTxOut
           { gyTxOutAddress = accAddr
@@ -46,19 +47,18 @@ initAccumulator v = do
           }
 
 addUtxo ::
-  (UtxoAccumulatorQueryMonad m) =>
+  UtxoAccumulatorQueryMonad m =>
   GYAddress ->
   GYAddress ->
   ScalarFieldOf BLS12_381_G1_Point ->
   m (GYTxSkeleton 'PlutusV3)
 addUtxo gyServer (addressToPlutus -> recipient) r = do
-  
-  ttRef <- ask
-  stateRef <- fromJust <$> getState (threadToken ttRef)
-  GYTxOut {gyTxOutAddress, gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput (fromRight (error "parsing error") $ txOutRefFromPlutus stateRef)
-  let params@UtxoAccumulatorParameters {..} =
+  Context {..} <- ask
+  stateRef <- fromJust <$> getState (threadToken ctxThreadTokenRef)
+  GYTxOut {gyTxOutAddress, gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput stateRef
+  let params@UtxoAccumulatorParameters {maybeNextAddress, currentGroupElement} =
         fromJust $
-          utxoAccumulatorParametersFromAddress accumulationValue (addressToPlutus gyTxOutAddress)
+          utxoAccumulatorParametersFromAddress ctxAccumulationValue (addressToPlutus gyTxOutAddress)
       (redeemer, h) = mkAddUtxo recipient r
 
       script :: GYBuildPlutusScript 'PlutusV3
@@ -67,13 +67,13 @@ addUtxo gyServer (addressToPlutus -> recipient) r = do
   return $
     mustHaveInput
       GYTxIn
-        { gyTxInTxOutRef = fromRight (error "Parsing reference failed.") $ txOutRefFromPlutus stateRef
+        { gyTxInTxOutRef = stateRef
         , gyTxInWitness = GYTxInWitnessScript script (fst <$> gyTxOutDatum) (redeemerFromPlutusData redeemer)
         }
       <> mustHaveOutput
         GYTxOut
           { gyTxOutAddress = addrAcc
-          , gyTxOutValue = gyTxOutValue <> fromRight (error "Parsing value failed.") (valueFromPlutus accumulationValue)
+          , gyTxOutValue = gyTxOutValue <> fromRight (error "Parsing value failed.") (valueFromPlutus ctxAccumulationValue)
           , gyTxOutDatum = Just (updateDatum (fst $ fromJust gyTxOutDatum) h currentGroupElement, GYTxOutUseInlineDatum)
           , gyTxOutRefS = Nothing
           }
@@ -93,15 +93,15 @@ addUtxo gyServer (addressToPlutus -> recipient) r = do
           }
 
 switchAccumulator ::
-  (UtxoAccumulatorQueryMonad m) =>
+  UtxoAccumulatorQueryMonad m =>
   m (GYTxSkeleton 'PlutusV3)
 switchAccumulator = do
-  ttRef <- ask
-  stateRef <- fromJust <$> getState (threadToken ttRef)
-  GYTxOut {gyTxOutAddress, gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput (fromRight (error "parsing error") $ txOutRefFromPlutus stateRef)
+  Context {..} <- ask
+  stateRef <- fromJust <$> getState (threadToken ctxThreadTokenRef)
+  GYTxOut {gyTxOutAddress, gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput stateRef
   let params@UtxoAccumulatorParameters {..} =
         fromJust $
-          utxoAccumulatorParametersFromAddress accumulationValue (addressToPlutus gyTxOutAddress)
+          utxoAccumulatorParametersFromAddress ctxAccumulationValue (addressToPlutus gyTxOutAddress)
 
       script :: GYBuildPlutusScript 'PlutusV3
       script = GYInScript @_ @PlutusV3 $ scriptFromPlutus $ utxoAccumulatorCompiled params
@@ -109,7 +109,7 @@ switchAccumulator = do
   return $
     mustHaveInput
       GYTxIn
-        { gyTxInTxOutRef = fromRight (error "Parsing reference failed.") $ txOutRefFromPlutus stateRef
+        { gyTxInTxOutRef = stateRef
         , gyTxInWitness = GYTxInWitnessScript script (fst <$> gyTxOutDatum) (redeemerFromPlutusData Switch)
         }
       <> mustHaveOutput
@@ -120,19 +120,20 @@ switchAccumulator = do
           , gyTxOutRefS = Nothing
           }
 
-removeUtxo :: (UtxoAccumulatorQueryMonad m) =>
+removeUtxo ::
+  UtxoAccumulatorQueryMonad m =>
   m (GYTxSkeleton 'PlutusV3)
 removeUtxo = do
-  ttRef <- ask
+  Context {..} <- ask
   hs <- undefined
   as <- undefined
   recipient <- undefined
   r <- undefined
-  stateRef <- fromJust <$> getState (threadToken ttRef)
-  GYTxOut {gyTxOutAddress, gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput (fromRight (error "parsing error") $ txOutRefFromPlutus stateRef)
+  stateRef <- fromJust <$> getState (threadToken ctxThreadTokenRef)
+  GYTxOut {gyTxOutAddress, gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput stateRef
   let params@UtxoAccumulatorParameters {..} =
         fromJust $
-          utxoAccumulatorParametersFromAddress accumulationValue (addressToPlutus gyTxOutAddress)
+          utxoAccumulatorParametersFromAddress ctxAccumulationValue (addressToPlutus gyTxOutAddress)
       (redeemer, a) = mkRemoveUtxo hs as recipient r
 
       script :: GYBuildPlutusScript 'PlutusV3
@@ -142,20 +143,20 @@ removeUtxo = do
   return $
     mustHaveInput
       GYTxIn
-        { gyTxInTxOutRef = fromRight (error "Parsing reference failed.") $ txOutRefFromPlutus stateRef
+        { gyTxInTxOutRef = stateRef
         , gyTxInWitness = GYTxInWitnessScript script (fst <$> gyTxOutDatum) (redeemerFromPlutusData redeemer)
         }
       <> mustHaveOutput
         GYTxOut
           { gyTxOutAddress = addrAcc
-          , gyTxOutValue = gyTxOutValue `valueMinus` fromRight (error "Parsing value failed.") (valueFromPlutus accumulationValue)
+          , gyTxOutValue = gyTxOutValue `valueMinus` fromRight (error "Parsing value failed.") (valueFromPlutus ctxAccumulationValue)
           , gyTxOutDatum = Just (updateDatum (fst $ fromJust gyTxOutDatum) a currentGroupElement, GYTxOutUseInlineDatum)
           , gyTxOutRefS = Nothing
           }
       <> mustHaveOutput
         GYTxOut
           { gyTxOutAddress = addrRecipient
-          , gyTxOutValue = fromRight (error "Parsing value failed.") (valueFromPlutus accumulationValue)
+          , gyTxOutValue = fromRight (error "Parsing value failed.") (valueFromPlutus ctxAccumulationValue)
           , gyTxOutDatum = Nothing
           , gyTxOutRefS = Nothing
           }

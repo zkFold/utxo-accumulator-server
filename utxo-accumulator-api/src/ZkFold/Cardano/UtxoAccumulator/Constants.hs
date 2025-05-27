@@ -1,14 +1,14 @@
 module ZkFold.Cardano.UtxoAccumulator.Constants where
 
+import Data.Either (fromRight)
+import Data.Maybe (fromJust)
+import GeniusYield.Scripts.TestToken (testTokenPolicy)
 import GeniusYield.Types
-import PlutusLedgerApi.V3 (Value, StakingCredential (..))
+import PlutusLedgerApi.V3 (StakingCredential (..), Value)
 import ZkFold.Cardano.OffChain.Plonkup (mkSetup)
 import ZkFold.Cardano.OnChain.Plonkup.Data (SetupBytes)
 import ZkFold.Symbolic.Examples.UtxoAccumulator (utxoAccumulatorVerifierSetup)
-import Prelude (($), error)
-import GeniusYield.Scripts.TestToken (testTokenPolicy)
-import Data.Either (fromRight)
-import Data.Maybe (fromJust)
+import Prelude (error, ($))
 
 type N = 10
 type M = 1024
@@ -36,10 +36,11 @@ protocolFee = lovelaceValueOf 1_000_000
 
 -- TODO: adjust the constant
 protocolTreasuryAddress :: GYAddress
-protocolTreasuryAddress = fromJust $
+protocolTreasuryAddress =
+  fromJust $
     addressFromTextMaybe "addr_test1qzz6f0p5u0p6fkm8yrtphaczrtlj49zlexh654nrgvp3atkcvu6hdrunpqkfygtup4vmz90acsaemlf8t5r7lua2wtlstf4kv9"
 
 -- TODO: adjust the constant
 protocolStakingCredential :: StakingCredential
 protocolStakingCredential =
-    StakingHash $ stakeCredentialToPlutus $ GYStakeCredentialByKey "d86735768f93082c92217c0d59b115fdc43b9dfd275d07eff3aa72ff"
+  StakingHash $ stakeCredentialToPlutus $ GYStakeCredentialByKey "d86735768f93082c92217c0d59b115fdc43b9dfd275d07eff3aa72ff"

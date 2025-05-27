@@ -1,5 +1,5 @@
 module ZkFold.Cardano.UtxoAccumulator.Types.State where
 
-import PlutusLedgerApi.V1 (TxOutRef)
+import GeniusYield.Types (GYTxOutRef)
 
-type UtxoAccumulatorState = Maybe TxOutRef
+type UtxoAccumulatorState = Maybe GYTxOutRef
