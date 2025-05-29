@@ -1,7 +1,6 @@
 module ZkFold.Cardano.UtxoAccumulator.Api (
   initAccumulator,
   addUtxo,
-  switchAccumulator,
   removeUtxo,
 ) where
 
@@ -13,7 +12,7 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Cardano.UtxoAccumulator.Api.Utils (getOutput, getState)
 import ZkFold.Cardano.UtxoAccumulator.Constants
-import ZkFold.Cardano.UtxoAccumulator.Transition (mkAddUtxo, mkRemoveUtxo, mkSwitchAccumulator)
+import ZkFold.Cardano.UtxoAccumulator.Transition (mkAddUtxo, mkRemoveUtxo)
 import ZkFold.Cardano.UtxoAccumulator.Types (UtxoAccumulatorQueryMonad)
 import ZkFold.Cardano.UtxoAccumulator.Types.Context (Context (..))
 
@@ -64,43 +63,21 @@ addUtxo gyServer (addressToPlutus -> recipient) r = do
           , gyTxOutDatum = Just (dat, GYTxOutUseInlineDatum)
           , gyTxOutRefS = Nothing
           }
-      <> mustHaveOutput
-        GYTxOut
-          { gyTxOutAddress = gyServer
-          , gyTxOutValue = serverFee
-          , gyTxOutDatum = Nothing
-          , gyTxOutRefS = Nothing
-          }
-      <> mustHaveOutput
-        GYTxOut
-          { gyTxOutAddress = protocolTreasuryAddress
-          , gyTxOutValue = protocolFee
-          , gyTxOutDatum = Nothing
-          , gyTxOutRefS = Nothing
-          }
 
-switchAccumulator ::
-  UtxoAccumulatorQueryMonad m =>
-  m (GYTxSkeleton 'PlutusV3)
-switchAccumulator = do
-  Context {..} <- ask
-  stateRef <- fromJust <$> getState (threadToken ctxThreadTokenRef)
-  GYTxOut {gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput stateRef
-  let (dat, redeemer) = mkSwitchAccumulator (fst $ fromJust gyTxOutDatum)
-  addrAcc <- utxoAccumulatorAddress ctxAccumulationValue
-  return $
-    mustHaveInput
-      GYTxIn
-        { gyTxInTxOutRef = stateRef
-        , gyTxInWitness = GYTxInWitnessScript (utxoAccumulatorBuildScript ctxAccumulatorScriptRef ctxAccumulationValue) (fst <$> gyTxOutDatum) redeemer
-        }
-      <> mustHaveOutput
-        GYTxOut
-          { gyTxOutAddress = addrAcc
-          , gyTxOutValue = gyTxOutValue
-          , gyTxOutDatum = Just (dat, GYTxOutUseInlineDatum)
-          , gyTxOutRefS = Nothing
-          }
+-- <> mustHaveOutput
+--   GYTxOut
+--     { gyTxOutAddress = gyServer
+--     , gyTxOutValue = serverFee
+--     , gyTxOutDatum = Nothing
+--     , gyTxOutRefS = Nothing
+--     }
+-- <> mustHaveOutput
+--   GYTxOut
+--     { gyTxOutAddress = protocolTreasuryAddress
+--     , gyTxOutValue = protocolFee
+--     , gyTxOutDatum = Nothing
+--     , gyTxOutRefS = Nothing
+--     }
 
 removeUtxo ::
   UtxoAccumulatorQueryMonad m =>

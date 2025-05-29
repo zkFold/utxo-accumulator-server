@@ -13,9 +13,11 @@ import Test.Tasty.HUnit (testCaseSteps)
 import ZkFold.Algebra.Class (zero)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
-import ZkFold.Cardano.UtxoAccumulator.Api (addUtxo, initAccumulator, removeUtxo, switchAccumulator)
-import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, scriptParkingAddress, utxoAccumulatorAddress, utxoAccumulatorScript)
+import ZkFold.Cardano.UtxoAccumulator.Api (addUtxo, initAccumulator, removeUtxo)
+import ZkFold.Cardano.UtxoAccumulator.Constants (M, N, protocolTreasuryAddress, scriptParkingAddress, utxoAccumulatorAddress, utxoAccumulatorScript)
 import ZkFold.Cardano.UtxoAccumulator.Types.Context (Context (..))
+import ZkFold.Prelude (writeFileJSON)
+import ZkFold.Symbolic.Examples.UtxoAccumulator (accumulationGroupElements, distributionGroupElements)
 
 fundingRun :: User -> GYAddress -> GYValue -> GYValue -> Ctx -> IO GYTxOutRef
 fundingRun treasury serverAddr serverFunds v ctx = ctxRun ctx treasury $ do
@@ -65,21 +67,6 @@ addUtxoRun context serverAddr recipient r u ctx = runGYTxMonadIO
     submitTxBodyConfirmed_ txBody [AGYPaymentSigningKey $ userPaymentSKey u]
     return txSkel
 
-switchAccumulatorRun :: Context -> GYAddress -> GYPaymentSigningKey -> GYStakeSigningKey -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
-switchAccumulatorRun context serverAddr serverPaymentKey serverStakeKey ctx = runGYTxMonadIO
-  (ctxNetworkId ctx)
-  (ctxProviders ctx)
-  (AGYPaymentSigningKey serverPaymentKey)
-  (Just $ AGYStakeSigningKey serverStakeKey)
-  [serverAddr]
-  serverAddr
-  Nothing
-  $ do
-    txSkel <- switchAccumulator `runReaderT` context
-    txBody <- buildTxBody txSkel
-    submitTxBodyConfirmed_ txBody [serverPaymentKey]
-    return txSkel
-
 removeUtxoRun :: Context -> GYAddress -> GYPaymentSigningKey -> GYStakeSigningKey -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
 removeUtxoRun context serverAddr serverPaymentKey serverStakeKey ctx = runGYTxMonadIO
   (ctxNetworkId ctx)
@@ -115,7 +102,12 @@ utxoAccumulatorTests setup =
           let accumulationValue :: GYValue
               accumulationValue = valueFromLovelace 100_000_000
 
+          -- writeFileJSON "utxo-accumulator-api/accumulation-group-elements.json" (accumulationGroupElements @N @M)
+          -- writeFileJSON "utxo-accumulator-api/distribution-group-elements.json" (distributionGroupElements @N @M)
+
           info $ "Protocol script size: " <> show (scriptSize $ GYPlutusScript $ utxoAccumulatorScript accumulationValue)
+          ctxRunQuery ctx (utxoAccumulatorAddress accumulationValue)
+            >>= info . ("Protocol script address: " <>) . show
 
           -- Funding the server
           info $ "Server's address: " <> show serverAddr
@@ -132,10 +124,6 @@ utxoAccumulatorTests setup =
           -- Adding funds to the accumulator
           txAdd <- addUtxoRun context serverAddr (userAddr user2) zero user1 ctx
           info $ "Transaction: " <> show txAdd
-
-          -- Switching the accumulator to distribution mode
-          txSwitch <- switchAccumulatorRun context serverAddr serverPaymentKey serverStakeKey ctx
-          info $ "Transaction: " <> show txSwitch
 
           -- Removing funds from the accumulator
           txRemove <- removeUtxoRun context serverAddr serverPaymentKey serverStakeKey ctx

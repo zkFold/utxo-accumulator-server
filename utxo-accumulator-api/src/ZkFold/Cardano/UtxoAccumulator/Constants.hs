@@ -10,13 +10,8 @@ import ZkFold.Cardano.OffChain.Plonkup (mkSetup)
 import ZkFold.Cardano.OffChain.Utils (scriptHashOf)
 import ZkFold.Cardano.OnChain.Plonkup.Data (SetupBytes)
 import ZkFold.Cardano.UPLC.Common (parkingSpotCompiled)
-import ZkFold.Cardano.UPLC.UtxoAccumulator (UtxoAccumulatorParameters (..), utxoAccumulatorCompiled)
-
--- import ZkFold.Cardano.UtxoAccumulator.Parameters (accumulationParameters)
-
-import ZkFold.Cardano.OffChain.BLS12_381 (convertG1)
-import ZkFold.Cardano.UtxoAccumulator.Datum (accumulationDatums, distributionDatums, utxoAccumulatorDatumHash)
-import ZkFold.Cardano.UtxoAccumulator.Precompute qualified as Precompute
+import ZkFold.Cardano.UPLC.UtxoAccumulator (UtxoAccumulatorParameters, utxoAccumulatorCompiled)
+import ZkFold.Cardano.UtxoAccumulator.Datum (addDatums, removeDatums)
 import ZkFold.Symbolic.Examples.UtxoAccumulator (utxoAccumulatorVerifierSetup)
 import Prelude (Integer, Maybe (..), ($), (.))
 
@@ -73,12 +68,7 @@ type N = 10
 type M = 1024
 
 utxoAccumulatorParameters :: GYValue -> UtxoAccumulatorParameters
-utxoAccumulatorParameters v =
-  UtxoAccumulatorParameters
-    { switchGroupElement = convertG1 Precompute.switchGroupElement
-    , switchDatumHash = utxoAccumulatorDatumHash $ head distributionDatums
-    , accumulationValue = valueToPlutus v
-    }
+utxoAccumulatorParameters = valueToPlutus
 
 utxoAccumulatorScript :: GYValue -> GYScript 'PlutusV3
 utxoAccumulatorScript = scriptFromPlutus . utxoAccumulatorCompiled . utxoAccumulatorParameters
@@ -100,6 +90,7 @@ utxoAccumulatorSetupBytesInit = mkSetup $ utxoAccumulatorVerifierSetup @N @M
 
 utxoAccumulatorDatumInit :: GYDatum
 utxoAccumulatorDatumInit =
-  let d = head accumulationDatums
-      setup = mkSetup $ utxoAccumulatorVerifierSetup @N @M
-   in datumFromPlutusData $ toBuiltinData (d, setup)
+  let addDatum = head addDatums
+      removeDatum = head removeDatums
+      setup = utxoAccumulatorSetupBytesInit
+   in datumFromPlutusData $ toBuiltinData (addDatum, removeDatum, setup)

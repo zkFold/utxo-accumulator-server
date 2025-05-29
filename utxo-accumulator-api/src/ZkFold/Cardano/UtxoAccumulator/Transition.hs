@@ -5,7 +5,6 @@ import PlutusTx.Builtins (ByteOrder (..), serialiseData)
 import PlutusTx.Prelude (
   blake2b_224,
   byteStringToInteger,
-  head,
   ($),
  )
 import Prelude (snd)
@@ -15,7 +14,7 @@ import GeniusYield.Types (GYDatum, GYRedeemer, datumFromPlutusData, datumToPlutu
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Field (toZp)
-import ZkFold.Cardano.OffChain.BLS12_381 (convertG1, convertZp)
+import ZkFold.Cardano.OffChain.BLS12_381 (convertZp)
 import ZkFold.Cardano.OffChain.Plonkup (mkProof)
 import ZkFold.Cardano.OnChain.Plonkup.Data (SetupBytes)
 import ZkFold.Cardano.OnChain.Plonkup.Update (updateSetupBytes)
@@ -24,8 +23,7 @@ import ZkFold.Cardano.UPLC.UtxoAccumulator (
   UtxoAccumulatorRedeemer (..),
  )
 import ZkFold.Cardano.UtxoAccumulator.Constants (M, N)
-import ZkFold.Cardano.UtxoAccumulator.Datum (distributionDatums, utxoAccumulatorDatumFromHash)
-import ZkFold.Cardano.UtxoAccumulator.Precompute qualified as Precompute
+import ZkFold.Cardano.UtxoAccumulator.Datum (addDatumFromHash, removeDatumFromHash)
 import ZkFold.Symbolic.Examples.UtxoAccumulator (
   utxoAccumulatorHash,
   utxoAccumulatorProve,
@@ -38,27 +36,15 @@ mkAddUtxo ::
   (GYDatum, GYRedeemer)
 mkAddUtxo dat addr r =
   let Datum d = datumToPlutus dat
-      (UtxoAccumulatorDatum {..}, setup) = unsafeFromBuiltinData d :: (UtxoAccumulatorDatum, SetupBytes)
+      (UtxoAccumulatorDatum {..}, datumRemove, setup) = unsafeFromBuiltinData d :: (UtxoAccumulatorDatum, UtxoAccumulatorDatum, SetupBytes)
 
       a = byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData addr
       h = convertZp $ utxoAccumulatorHash (toZp a) r
 
-      d' = utxoAccumulatorDatumFromHash (fromJust maybeNextDatumHash)
-      setup' = updateSetupBytes setup h currentGroupElement
-      dat' = datumFromPlutusData $ toBuiltinData (d', setup')
+      d' = addDatumFromHash nextDatumHash
+      setup' = updateSetupBytes setup h $ fromJust maybeCurrentGroupElement
+      dat' = datumFromPlutusData $ toBuiltinData (d', datumRemove, setup')
    in (dat', redeemerFromPlutusData $ AddUtxo h d')
-
-mkSwitchAccumulator ::
-  GYDatum ->
-  (GYDatum, GYRedeemer)
-mkSwitchAccumulator dat =
-  let Datum d = datumToPlutus dat
-      (_, setup) = unsafeFromBuiltinData d :: (UtxoAccumulatorDatum, SetupBytes)
-
-      d' = head distributionDatums
-      setup' = updateSetupBytes setup 1 $ convertG1 Precompute.switchGroupElement
-      dat' = datumFromPlutusData $ toBuiltinData (d', setup')
-   in (dat', redeemerFromPlutusData $ Switch d')
 
 mkRemoveUtxo ::
   GYDatum ->
@@ -69,12 +55,12 @@ mkRemoveUtxo ::
   (GYDatum, GYRedeemer)
 mkRemoveUtxo dat hs as addr r =
   let Datum d = datumToPlutus dat
-      (UtxoAccumulatorDatum {..}, setup) = unsafeFromBuiltinData d :: (UtxoAccumulatorDatum, SetupBytes)
+      (datumAdd, UtxoAccumulatorDatum {..}, setup) = unsafeFromBuiltinData d :: (UtxoAccumulatorDatum, UtxoAccumulatorDatum, SetupBytes)
 
       a = byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData addr
       proof = mkProof $ snd $ utxoAccumulatorProve @N @M hs as (toZp a) r
 
-      d' = utxoAccumulatorDatumFromHash (fromJust maybeNextDatumHash)
-      setup' = updateSetupBytes setup a currentGroupElement
-      dat' = datumFromPlutusData $ toBuiltinData (d', setup')
+      d' = removeDatumFromHash nextDatumHash
+      setup' = updateSetupBytes setup a $ fromJust maybeCurrentGroupElement
+      dat' = datumFromPlutusData $ toBuiltinData (datumAdd, d', setup')
    in (dat', redeemerFromPlutusData $ RemoveUtxo addr proof d')
