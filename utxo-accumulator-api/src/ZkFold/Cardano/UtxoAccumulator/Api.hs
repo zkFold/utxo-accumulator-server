@@ -41,53 +41,39 @@ initAccumulator = do
 addUtxo ::
   UtxoAccumulatorQueryMonad m =>
   GYAddress ->
-  GYAddress ->
   ScalarFieldOf BLS12_381_G1_Point ->
-  m (GYTxSkeleton 'PlutusV3)
-addUtxo gyServer (addressToPlutus -> recipient) r = do
+  m (GYTxSkeleton 'PlutusV3, ScalarFieldOf BLS12_381_G1_Point)
+addUtxo (addressToPlutus -> recipient) r = do
   Context {..} <- ask
   stateRef <- fromJust <$> getState (threadToken ctxThreadTokenRef)
   GYTxOut {gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput stateRef
-  let (dat, redeemer) = mkAddUtxo (fst $ fromJust gyTxOutDatum) recipient r
+  let (dat, redeemer, h) = mkAddUtxo (fst $ fromJust gyTxOutDatum) recipient r
   addrAcc <- utxoAccumulatorAddress ctxAccumulationValue
-  return $
-    mustHaveInput
-      GYTxIn
-        { gyTxInTxOutRef = stateRef
-        , gyTxInWitness = GYTxInWitnessScript (utxoAccumulatorBuildScript ctxAccumulatorScriptRef ctxAccumulationValue) (fst <$> gyTxOutDatum) redeemer
-        }
-      <> mustHaveOutput
-        GYTxOut
-          { gyTxOutAddress = addrAcc
-          , gyTxOutValue = gyTxOutValue <> ctxAccumulationValue
-          , gyTxOutDatum = Just (dat, GYTxOutUseInlineDatum)
-          , gyTxOutRefS = Nothing
-          }
-
--- <> mustHaveOutput
---   GYTxOut
---     { gyTxOutAddress = gyServer
---     , gyTxOutValue = serverFee
---     , gyTxOutDatum = Nothing
---     , gyTxOutRefS = Nothing
---     }
--- <> mustHaveOutput
---   GYTxOut
---     { gyTxOutAddress = protocolTreasuryAddress
---     , gyTxOutValue = protocolFee
---     , gyTxOutDatum = Nothing
---     , gyTxOutRefS = Nothing
---     }
+  let txSkeleton =
+        mustHaveInput
+          GYTxIn
+            { gyTxInTxOutRef = stateRef
+            , gyTxInWitness = GYTxInWitnessScript (utxoAccumulatorBuildScript ctxAccumulatorScriptRef ctxAccumulationValue) (fst <$> gyTxOutDatum) redeemer
+            }
+          <> mustHaveOutput
+            GYTxOut
+              { gyTxOutAddress = addrAcc
+              , gyTxOutValue = gyTxOutValue <> ctxAccumulationValue
+              , gyTxOutDatum = Just (dat, GYTxOutUseInlineDatum)
+              , gyTxOutRefS = Nothing
+              }
+  return (txSkeleton, h)
 
 removeUtxo ::
   UtxoAccumulatorQueryMonad m =>
+  GYAddress ->
+  [ScalarFieldOf BLS12_381_G1_Point] ->
+  [ScalarFieldOf BLS12_381_G1_Point] ->
+  GYAddress ->
+  ScalarFieldOf BLS12_381_G1_Point ->
   m (GYTxSkeleton 'PlutusV3)
-removeUtxo = do
+removeUtxo gyServer hs as (addressToPlutus -> recipient) r = do
   Context {..} <- ask
-  hs <- undefined
-  as <- undefined
-  recipient <- undefined
-  r <- undefined
   stateRef <- fromJust <$> getState (threadToken ctxThreadTokenRef)
   GYTxOut {gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput stateRef
   let (dat, redeemer) = mkRemoveUtxo (fst $ fromJust gyTxOutDatum) hs as recipient r
@@ -110,6 +96,20 @@ removeUtxo = do
         GYTxOut
           { gyTxOutAddress = addrRecipient
           , gyTxOutValue = ctxAccumulationValue
+          , gyTxOutDatum = Nothing
+          , gyTxOutRefS = Nothing
+          }
+      <> mustHaveOutput
+        GYTxOut
+          { gyTxOutAddress = gyServer
+          , gyTxOutValue = serverFee
+          , gyTxOutDatum = Nothing
+          , gyTxOutRefS = Nothing
+          }
+      <> mustHaveOutput
+        GYTxOut
+          { gyTxOutAddress = protocolTreasuryAddress
+          , gyTxOutValue = protocolFee
           , gyTxOutDatum = Nothing
           , gyTxOutRefS = Nothing
           }

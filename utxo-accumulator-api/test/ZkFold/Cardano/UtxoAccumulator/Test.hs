@@ -10,14 +10,12 @@ import GeniusYield.TxBuilder
 import GeniusYield.Types
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCaseSteps)
-import ZkFold.Algebra.Class (zero)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
+import ZkFold.Algebra.Field (toZp)
 import ZkFold.Cardano.UtxoAccumulator.Api (addUtxo, initAccumulator, removeUtxo)
-import ZkFold.Cardano.UtxoAccumulator.Constants (M, N, protocolTreasuryAddress, scriptParkingAddress, utxoAccumulatorAddress, utxoAccumulatorScript)
+import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, scriptParkingAddress, utxoAccumulatorAddress, utxoAccumulatorScript)
 import ZkFold.Cardano.UtxoAccumulator.Types.Context (Context (..))
-import ZkFold.Prelude (writeFileJSON)
-import ZkFold.Symbolic.Examples.UtxoAccumulator (accumulationGroupElements, distributionGroupElements)
 
 fundingRun :: User -> GYAddress -> GYValue -> GYValue -> Ctx -> IO GYTxOutRef
 fundingRun treasury serverAddr serverFunds v ctx = ctxRun ctx treasury $ do
@@ -52,8 +50,8 @@ initAccumulatorRun ctxAccumulatorScriptRef serverAddr serverPaymentKey serverSta
     submitTxBodyConfirmed_ txBody [serverPaymentKey]
     return (txSkel, context)
 
-addUtxoRun :: Context -> GYAddress -> GYAddress -> ScalarFieldOf BLS12_381_G1_Point -> User -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
-addUtxoRun context serverAddr recipient r u ctx = runGYTxMonadIO
+addUtxoRun :: Context -> GYAddress -> ScalarFieldOf BLS12_381_G1_Point -> User -> Ctx -> IO (GYTxSkeleton 'PlutusV3, ScalarFieldOf BLS12_381_G1_Point)
+addUtxoRun context recipient r u ctx = runGYTxMonadIO
   (ctxNetworkId ctx)
   (ctxProviders ctx)
   (AGYPaymentSigningKey $ userPaymentSKey u)
@@ -62,13 +60,23 @@ addUtxoRun context serverAddr recipient r u ctx = runGYTxMonadIO
   (userAddr u)
   Nothing
   $ do
-    txSkel <- addUtxo serverAddr recipient r `runReaderT` context
+    (txSkel, h) <- addUtxo recipient r `runReaderT` context
     txBody <- buildTxBody txSkel
     submitTxBodyConfirmed_ txBody [AGYPaymentSigningKey $ userPaymentSKey u]
-    return txSkel
+    return (txSkel, h)
 
-removeUtxoRun :: Context -> GYAddress -> GYPaymentSigningKey -> GYStakeSigningKey -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
-removeUtxoRun context serverAddr serverPaymentKey serverStakeKey ctx = runGYTxMonadIO
+removeUtxoRun ::
+  Context ->
+  GYAddress ->
+  GYPaymentSigningKey ->
+  GYStakeSigningKey ->
+  [ScalarFieldOf BLS12_381_G1_Point] ->
+  [ScalarFieldOf BLS12_381_G1_Point] ->
+  GYAddress ->
+  ScalarFieldOf BLS12_381_G1_Point ->
+  Ctx ->
+  IO (GYTxSkeleton 'PlutusV3)
+removeUtxoRun context serverAddr serverPaymentKey serverStakeKey hs as addr r ctx = runGYTxMonadIO
   (ctxNetworkId ctx)
   (ctxProviders ctx)
   (AGYPaymentSigningKey serverPaymentKey)
@@ -77,7 +85,7 @@ removeUtxoRun context serverAddr serverPaymentKey serverStakeKey ctx = runGYTxMo
   serverAddr
   Nothing
   $ do
-    txSkel <- removeUtxo `runReaderT` context
+    txSkel <- removeUtxo serverAddr hs as addr r `runReaderT` context
     txBody <- buildTxBody txSkel
     submitTxBodyConfirmed_ txBody [serverPaymentKey]
     return txSkel
@@ -122,11 +130,12 @@ utxoAccumulatorTests setup =
             >>= info . ("Initialized accumulator. Server's utxos: " <>) . show
 
           -- Adding funds to the accumulator
-          txAdd <- addUtxoRun context serverAddr (userAddr user2) zero user1 ctx
+          let r = toZp 42
+          (txAdd, h) <- addUtxoRun context (userAddr user2) r user1 ctx
           info $ "Transaction: " <> show txAdd
 
           -- Removing funds from the accumulator
-          txRemove <- removeUtxoRun context serverAddr serverPaymentKey serverStakeKey ctx
+          txRemove <- removeUtxoRun context serverAddr serverPaymentKey serverStakeKey [h] [] (userAddr user2) r ctx
           info $ "Transaction: " <> show txRemove
 
           ctxRunQuery ctx (utxosAtAddress protocolTreasuryAddress Nothing)

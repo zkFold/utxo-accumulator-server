@@ -33,18 +33,19 @@ mkAddUtxo ::
   GYDatum ->
   Address ->
   ScalarFieldOf BLS12_381_G1_Point ->
-  (GYDatum, GYRedeemer)
+  (GYDatum, GYRedeemer, ScalarFieldOf BLS12_381_G1_Point)
 mkAddUtxo dat addr r =
   let Datum d = datumToPlutus dat
       (UtxoAccumulatorDatum {..}, datumRemove, setup) = unsafeFromBuiltinData d :: (UtxoAccumulatorDatum, UtxoAccumulatorDatum, SetupBytes)
 
       a = byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData addr
-      h = convertZp $ utxoAccumulatorHash (toZp a) r
+      h = utxoAccumulatorHash (toZp a) r
+      hInt = convertZp h
 
       d' = addDatumFromHash nextDatumHash
-      setup' = updateSetupBytes setup h $ fromJust maybeCurrentGroupElement
+      setup' = updateSetupBytes setup hInt $ fromJust maybeCurrentGroupElement
       dat' = datumFromPlutusData $ toBuiltinData (d', datumRemove, setup')
-   in (dat', redeemerFromPlutusData $ AddUtxo h d')
+   in (dat', redeemerFromPlutusData $ AddUtxo hInt d', h)
 
 mkRemoveUtxo ::
   GYDatum ->
