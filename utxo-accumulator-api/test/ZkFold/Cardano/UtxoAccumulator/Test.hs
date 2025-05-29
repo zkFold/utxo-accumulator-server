@@ -14,7 +14,7 @@ import ZkFold.Algebra.Class (zero)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Cardano.UtxoAccumulator.Api (addUtxo, initAccumulator, removeUtxo, switchAccumulator)
-import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, scriptParkingAddress, utxoAccumulatorScript)
+import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, scriptParkingAddress, utxoAccumulatorAddress, utxoAccumulatorScript)
 import ZkFold.Cardano.UtxoAccumulator.Types.Context (Context (..))
 
 fundingRun :: User -> GYAddress -> GYValue -> GYValue -> Ctx -> IO GYTxOutRef
@@ -114,6 +114,8 @@ utxoAccumulatorTests setup =
 
           let accumulationValue :: GYValue
               accumulationValue = valueFromLovelace 100_000_000
+
+          info $ "Protocol script size: " <> show (scriptSize $ GYPlutusScript $ utxoAccumulatorScript accumulationValue)
 
           -- Funding the server
           info $ "Server's address: " <> show serverAddr
