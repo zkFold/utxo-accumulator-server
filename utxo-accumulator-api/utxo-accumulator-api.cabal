@@ -48,7 +48,6 @@ library
     ZkFold.Cardano.UtxoAccumulator.Types
     ZkFold.Cardano.UtxoAccumulator.Types.Context
     ZkFold.Cardano.UtxoAccumulator.Types.Monad
-    ZkFold.Cardano.UtxoAccumulator.Types.State
     ZkFold.Cardano.UtxoAccumulator.Utils
 
   -- other-modules:
@@ -64,6 +63,7 @@ library
     containers,
     data-default,
     deriving-aeson,
+    directory,
     file-embed,
     http-types,
     lens,

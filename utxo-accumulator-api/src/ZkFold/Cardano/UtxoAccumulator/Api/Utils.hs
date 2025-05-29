@@ -3,12 +3,11 @@ module ZkFold.Cardano.UtxoAccumulator.Api.Utils where
 import Data.Maybe (fromJust)
 import GeniusYield.TxBuilder (GYTxQueryMonad (..))
 import GeniusYield.Types
-import ZkFold.Cardano.UtxoAccumulator.Types.State (UtxoAccumulatorState)
 
 getState ::
   GYTxQueryMonad m =>
   GYAssetClass ->
-  m UtxoAccumulatorState
+  m (Maybe GYTxOutRef)
 getState tt = do
   utxos <- utxosWithAsset (fromJust $ nonAdaTokenFromAssetClass tt)
   return $ case utxosToList utxos of

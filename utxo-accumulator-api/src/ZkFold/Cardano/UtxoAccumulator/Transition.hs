@@ -29,23 +29,26 @@ import ZkFold.Symbolic.Examples.UtxoAccumulator (
   utxoAccumulatorProve,
  )
 
+utxoAccumulatorHashWrapper :: Address -> ScalarFieldOf BLS12_381_G1_Point -> ScalarFieldOf BLS12_381_G1_Point
+utxoAccumulatorHashWrapper addr r =
+  let a = byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData addr
+   in utxoAccumulatorHash (toZp a) r
+
 mkAddUtxo ::
   GYDatum ->
   Address ->
   ScalarFieldOf BLS12_381_G1_Point ->
-  (GYDatum, GYRedeemer, ScalarFieldOf BLS12_381_G1_Point)
+  (GYDatum, GYRedeemer)
 mkAddUtxo dat addr r =
   let Datum d = datumToPlutus dat
       (UtxoAccumulatorDatum {..}, datumRemove, setup) = unsafeFromBuiltinData d :: (UtxoAccumulatorDatum, UtxoAccumulatorDatum, SetupBytes)
 
-      a = byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData addr
-      h = utxoAccumulatorHash (toZp a) r
-      hInt = convertZp h
+      h = convertZp $ utxoAccumulatorHashWrapper addr r
 
       d' = addDatumFromHash nextDatumHash
-      setup' = updateSetupBytes setup hInt $ fromJust maybeCurrentGroupElement
+      setup' = updateSetupBytes setup h $ fromJust maybeCurrentGroupElement
       dat' = datumFromPlutusData $ toBuiltinData (d', datumRemove, setup')
-   in (dat', redeemerFromPlutusData $ AddUtxo hInt d', h)
+   in (dat', redeemerFromPlutusData $ AddUtxo h d')
 
 mkRemoveUtxo ::
   GYDatum ->

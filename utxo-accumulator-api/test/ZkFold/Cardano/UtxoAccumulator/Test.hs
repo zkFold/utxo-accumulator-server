@@ -3,6 +3,7 @@ module ZkFold.Cardano.UtxoAccumulator.Test (
 ) where
 
 import Control.Monad.Reader (runReaderT)
+import Data.Map (fromList)
 import GeniusYield.Imports ((&))
 import GeniusYield.Test.Privnet.Ctx
 import GeniusYield.Test.Privnet.Setup
@@ -16,6 +17,9 @@ import ZkFold.Algebra.Field (toZp)
 import ZkFold.Cardano.UtxoAccumulator.Api (addUtxo, initAccumulator, removeUtxo)
 import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, scriptParkingAddress, utxoAccumulatorAddress, utxoAccumulatorScript)
 import ZkFold.Cardano.UtxoAccumulator.Types.Context (Context (..))
+import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper)
+import ZkFold.Cardano.UtxoAccumulator.Sync (getTickets, findUnusedTicket, addressList, getTxs, putTxs)
+import Data.Maybe (fromJust)
 
 fundingRun :: User -> GYAddress -> GYValue -> GYValue -> Ctx -> IO GYTxOutRef
 fundingRun treasury serverAddr serverFunds v ctx = ctxRun ctx treasury $ do
@@ -50,45 +54,49 @@ initAccumulatorRun ctxAccumulatorScriptRef serverAddr serverPaymentKey serverSta
     submitTxBodyConfirmed_ txBody [serverPaymentKey]
     return (txSkel, context)
 
-addUtxoRun :: Context -> GYAddress -> ScalarFieldOf BLS12_381_G1_Point -> User -> Ctx -> IO (GYTxSkeleton 'PlutusV3, ScalarFieldOf BLS12_381_G1_Point)
-addUtxoRun context recipient r u ctx = runGYTxMonadIO
-  (ctxNetworkId ctx)
-  (ctxProviders ctx)
-  (AGYPaymentSigningKey $ userPaymentSKey u)
-  (AGYStakeSigningKey <$> userStakeSKey u)
-  [userAddr u]
-  (userAddr u)
-  Nothing
-  $ do
-    (txSkel, h) <- addUtxo recipient r `runReaderT` context
-    txBody <- buildTxBody txSkel
-    submitTxBodyConfirmed_ txBody [AGYPaymentSigningKey $ userPaymentSKey u]
-    return (txSkel, h)
+addUtxoRun :: Context -> GYAddress -> ScalarFieldOf BLS12_381_G1_Point -> User -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
+addUtxoRun context recipient r u ctx = do
+  m <- getTxs
+  putTxs $ (recipient, r) : m
+  runGYTxMonadIO
+    (ctxNetworkId ctx)
+    (ctxProviders ctx)
+    (AGYPaymentSigningKey $ userPaymentSKey u)
+    (AGYStakeSigningKey <$> userStakeSKey u)
+    [userAddr u]
+    (userAddr u)
+    Nothing
+    $ do
+      txSkel <- addUtxo recipient r `runReaderT` context
+      txBody <- buildTxBody txSkel
+      submitTxBodyConfirmed_ txBody [AGYPaymentSigningKey $ userPaymentSKey u]
+      return txSkel
 
 removeUtxoRun ::
   Context ->
   GYAddress ->
   GYPaymentSigningKey ->
   GYStakeSigningKey ->
-  [ScalarFieldOf BLS12_381_G1_Point] ->
-  [ScalarFieldOf BLS12_381_G1_Point] ->
-  GYAddress ->
-  ScalarFieldOf BLS12_381_G1_Point ->
   Ctx ->
   IO (GYTxSkeleton 'PlutusV3)
-removeUtxoRun context serverAddr serverPaymentKey serverStakeKey hs as addr r ctx = runGYTxMonadIO
-  (ctxNetworkId ctx)
-  (ctxProviders ctx)
-  (AGYPaymentSigningKey serverPaymentKey)
-  (Just $ AGYStakeSigningKey serverStakeKey)
-  [serverAddr]
-  serverAddr
-  Nothing
-  $ do
-    txSkel <- removeUtxo serverAddr hs as addr r `runReaderT` context
-    txBody <- buildTxBody txSkel
-    submitTxBodyConfirmed_ txBody [serverPaymentKey]
-    return txSkel
+removeUtxoRun context serverAddr serverPaymentKey serverStakeKey ctx = do
+  m <- getTxs
+  as <- addressList <$> getTickets
+  let hs = map (\(a, x) -> utxoAccumulatorHashWrapper (addressToPlutus a) x) m
+      (recipient, r) = fromJust $ findUnusedTicket (fromList m) as
+  runGYTxMonadIO
+    (ctxNetworkId ctx)
+    (ctxProviders ctx)
+    (AGYPaymentSigningKey serverPaymentKey)
+    (Just $ AGYStakeSigningKey serverStakeKey)
+    [serverAddr]
+    serverAddr
+    Nothing
+    $ do
+      txSkel <- removeUtxo serverAddr hs as recipient r `runReaderT` context
+      txBody <- buildTxBody txSkel
+      submitTxBodyConfirmed_ txBody [serverPaymentKey]
+      return txSkel
 
 utxoAccumulatorTests :: Setup -> TestTree
 utxoAccumulatorTests setup =
@@ -131,11 +139,11 @@ utxoAccumulatorTests setup =
 
           -- Adding funds to the accumulator
           let r = toZp 42
-          (txAdd, h) <- addUtxoRun context (userAddr user2) r user1 ctx
+          txAdd <- addUtxoRun context (userAddr user2) r user1 ctx
           info $ "Transaction: " <> show txAdd
 
           -- Removing funds from the accumulator
-          txRemove <- removeUtxoRun context serverAddr serverPaymentKey serverStakeKey [h] [] (userAddr user2) r ctx
+          txRemove <- removeUtxoRun context serverAddr serverPaymentKey serverStakeKey ctx
           info $ "Transaction: " <> show txRemove
 
           ctxRunQuery ctx (utxosAtAddress protocolTreasuryAddress Nothing)
