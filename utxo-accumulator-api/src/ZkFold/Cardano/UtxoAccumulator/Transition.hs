@@ -1,33 +1,35 @@
 module ZkFold.Cardano.UtxoAccumulator.Transition where
 
-import PlutusLedgerApi.V3 (Address (..), ToData (..), Datum (..), UnsafeFromData (..))
+import PlutusLedgerApi.V3 (Address (..), Datum (..), ToData (..), UnsafeFromData (..))
 import PlutusTx.Builtins (ByteOrder (..), serialiseData)
 import PlutusTx.Prelude (
   blake2b_224,
   byteStringToInteger,
-  ($), head,
+  head,
+  ($),
  )
 import Prelude (snd)
 
+import Data.Maybe (fromJust)
+import GeniusYield.Types (GYDatum, GYRedeemer, datumFromPlutusData, datumToPlutus, redeemerFromPlutusData)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Field (toZp)
-import ZkFold.Cardano.OffChain.BLS12_381 (convertZp, convertG1)
+import ZkFold.Cardano.OffChain.BLS12_381 (convertG1, convertZp)
 import ZkFold.Cardano.OffChain.Plonkup (mkProof)
+import ZkFold.Cardano.OnChain.Plonkup.Data (SetupBytes)
+import ZkFold.Cardano.OnChain.Plonkup.Update (updateSetupBytes)
 import ZkFold.Cardano.UPLC.UtxoAccumulator (
-  UtxoAccumulatorRedeemer (..), UtxoAccumulatorDatum (..)
+  UtxoAccumulatorDatum (..),
+  UtxoAccumulatorRedeemer (..),
  )
 import ZkFold.Cardano.UtxoAccumulator.Constants (M, N)
+import ZkFold.Cardano.UtxoAccumulator.Datum (distributionDatums, utxoAccumulatorDatumFromHash)
+import ZkFold.Cardano.UtxoAccumulator.Precompute qualified as Precompute
 import ZkFold.Symbolic.Examples.UtxoAccumulator (
   utxoAccumulatorHash,
   utxoAccumulatorProve,
  )
-import GeniusYield.Types (GYDatum, datumToPlutus, datumFromPlutusData, GYRedeemer, redeemerFromPlutusData)
-import ZkFold.Cardano.OnChain.Plonkup.Data (SetupBytes)
-import Data.Maybe (fromJust)
-import ZkFold.Cardano.OnChain.Plonkup.Update (updateSetupBytes)
-import ZkFold.Cardano.UtxoAccumulator.Datum (utxoAccumulatorDatumFromHash, distributionDatums)
-import qualified ZkFold.Cardano.UtxoAccumulator.Precompute as Precompute
 
 mkAddUtxo ::
   GYDatum ->

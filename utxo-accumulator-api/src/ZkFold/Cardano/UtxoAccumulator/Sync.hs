@@ -12,5 +12,6 @@ import ZkFold.Cardano.UtxoAccumulator.Transition (mkAddUtxo, mkRemoveUtxo, mkSwi
 import ZkFold.Cardano.UtxoAccumulator.Types (UtxoAccumulatorQueryMonad)
 import ZkFold.Cardano.UtxoAccumulator.Types.Context (Context (..))
 
-data AccumulatorInput = Add (ScalarFieldOf BLS12_381_G1_Point)
-                      | Remove (ScalarFieldOf BLS12_381_G1_Point)
+data AccumulatorInput
+  = Add (ScalarFieldOf BLS12_381_G1_Point)
+  | Remove (ScalarFieldOf BLS12_381_G1_Point)

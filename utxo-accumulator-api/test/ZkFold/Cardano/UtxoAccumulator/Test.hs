@@ -20,15 +20,16 @@ import ZkFold.Cardano.UtxoAccumulator.Types.Context (Context (..))
 fundingRun :: User -> GYAddress -> GYValue -> GYValue -> Ctx -> IO GYTxOutRef
 fundingRun treasury serverAddr serverFunds v ctx = ctxRun ctx treasury $ do
   parkingAddr <- scriptParkingAddress
-  txBodyFund <- buildTxBody $
-    mustHaveOutput (mkGYTxOutNoDatum serverAddr serverFunds)
-    <> mustHaveOutput
-      GYTxOut
-        { gyTxOutAddress = parkingAddr
-        , gyTxOutValue = valueFromLovelace 20_000_000
-        , gyTxOutDatum = Nothing
-        , gyTxOutRefS = Just $ GYPlutusScript $ utxoAccumulatorScript v
-        }
+  txBodyFund <-
+    buildTxBody $
+      mustHaveOutput (mkGYTxOutNoDatum serverAddr serverFunds)
+        <> mustHaveOutput
+          GYTxOut
+            { gyTxOutAddress = parkingAddr
+            , gyTxOutValue = valueFromLovelace 20_000_000
+            , gyTxOutDatum = Nothing
+            , gyTxOutRefS = Just $ GYPlutusScript $ utxoAccumulatorScript v
+            }
   txId <- signAndSubmitConfirmed txBodyFund
   return $ txOutRefFromTuple (txId, 1)
 
