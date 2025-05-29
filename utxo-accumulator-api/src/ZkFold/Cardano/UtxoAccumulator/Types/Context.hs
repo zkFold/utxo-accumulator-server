@@ -1,10 +1,10 @@
 module ZkFold.Cardano.UtxoAccumulator.Types.Context where
 
-import GeniusYield.Types (GYTxOutRef)
-import PlutusLedgerApi.V3 (Value)
+import GeniusYield.Types (GYTxOutRef, GYValue)
 
 data Context = Context
-  { ctxThreadTokenRef :: GYTxOutRef
-  , ctxAccumulationValue :: Value
+  { ctxAccumulatorScriptRef :: GYTxOutRef
+  , ctxThreadTokenRef       :: GYTxOutRef
+  , ctxAccumulationValue    :: GYValue
   }
   deriving (Show, Eq)

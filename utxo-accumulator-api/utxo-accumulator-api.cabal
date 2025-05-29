@@ -43,8 +43,8 @@ library
     ZkFold.Cardano.UtxoAccumulator.Constants
     ZkFold.Cardano.UtxoAccumulator.Datum
     ZkFold.Cardano.UtxoAccumulator.Precompute
-    ZkFold.Cardano.UtxoAccumulator.Redeemer
-    ZkFold.Cardano.UtxoAccumulator.ScriptParameters
+    ZkFold.Cardano.UtxoAccumulator.Sync
+    ZkFold.Cardano.UtxoAccumulator.Transition
     ZkFold.Cardano.UtxoAccumulator.Types
     ZkFold.Cardano.UtxoAccumulator.Types.Context
     ZkFold.Cardano.UtxoAccumulator.Types.Monad

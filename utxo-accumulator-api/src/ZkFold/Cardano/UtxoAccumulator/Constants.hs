@@ -1,17 +1,26 @@
 module ZkFold.Cardano.UtxoAccumulator.Constants where
 
-import Data.Either (fromRight)
+import Data.List (head)
 import Data.Maybe (fromJust)
 import GeniusYield.Scripts.TestToken (testTokenPolicy)
+import GeniusYield.TxBuilder (GYTxQueryMonad, addressFromPlutus')
 import GeniusYield.Types
-import PlutusLedgerApi.V3 (StakingCredential (..), Value)
+import PlutusLedgerApi.V3 (Address (..), Credential (..), StakingCredential (..), ToData (..))
 import ZkFold.Cardano.OffChain.Plonkup (mkSetup)
+import ZkFold.Cardano.OffChain.Utils (scriptHashOf)
 import ZkFold.Cardano.OnChain.Plonkup.Data (SetupBytes)
-import ZkFold.Symbolic.Examples.UtxoAccumulator (utxoAccumulatorVerifierSetup)
-import Prelude (error, ($))
+import ZkFold.Cardano.UPLC.Common (parkingSpotCompiled)
+import ZkFold.Cardano.UPLC.UtxoAccumulator (UtxoAccumulatorParameters (..), utxoAccumulatorCompiled)
 
-type N = 10
-type M = 1024
+-- import ZkFold.Cardano.UtxoAccumulator.Parameters (accumulationParameters)
+
+import ZkFold.Cardano.OffChain.BLS12_381 (convertG1)
+import ZkFold.Cardano.UtxoAccumulator.Datum (accumulationDatums, distributionDatums, utxoAccumulatorDatumHash)
+import ZkFold.Cardano.UtxoAccumulator.Precompute qualified as Precompute
+import ZkFold.Symbolic.Examples.UtxoAccumulator (utxoAccumulatorVerifierSetup)
+import Prelude (Integer, Maybe (..), ($), (.))
+
+-- Thread token
 
 threadTokenName :: GYTokenName
 threadTokenName = GYTokenName ""
@@ -22,17 +31,30 @@ threadTokenPolicy = testTokenPolicy 1 threadTokenName
 threadToken :: GYTxOutRef -> GYAssetClass
 threadToken ref = GYToken (mintingPolicyId $ threadTokenPolicy ref) threadTokenName
 
-utxoAccumulatorSetupBytesInit :: SetupBytes
-utxoAccumulatorSetupBytesInit = mkSetup $ utxoAccumulatorVerifierSetup @N @M
+-- Script parking
+
+scriptParkingParameter :: Integer
+scriptParkingParameter = 42
+
+scriptParkingAddress :: GYTxQueryMonad m => m GYAddress
+scriptParkingAddress =
+  let sh = scriptHashOf $ parkingSpotCompiled scriptParkingParameter
+   in addressFromPlutus' $
+        Address
+          { addressCredential = ScriptCredential sh
+          , addressStakingCredential = Just protocolStakingCredential
+          }
+
+-- Protocol parameters
 
 serverDeposit :: GYValue
-serverDeposit = fromRight (error "Parsing value failed.") $ valueFromPlutus $ lovelaceValueOf 2_000_000
+serverDeposit = valueFromLovelace 2_000_000
 
-serverFee :: Value
-serverFee = lovelaceValueOf 5_000_000
+serverFee :: GYValue
+serverFee = valueFromLovelace 5_000_000
 
-protocolFee :: Value
-protocolFee = lovelaceValueOf 1_000_000
+protocolFee :: GYValue
+protocolFee = valueFromLovelace 1_000_000
 
 -- TODO: adjust the constant
 protocolTreasuryAddress :: GYAddress
@@ -44,3 +66,40 @@ protocolTreasuryAddress =
 protocolStakingCredential :: StakingCredential
 protocolStakingCredential =
   StakingHash $ stakeCredentialToPlutus $ GYStakeCredentialByKey "d86735768f93082c92217c0d59b115fdc43b9dfd275d07eff3aa72ff"
+
+-- Utxo Accumulator
+
+type N = 10
+type M = 1024
+
+utxoAccumulatorParameters :: GYValue -> UtxoAccumulatorParameters
+utxoAccumulatorParameters v =
+  UtxoAccumulatorParameters
+    { switchGroupElement = convertG1 Precompute.switchGroupElement
+    , switchDatumHash = utxoAccumulatorDatumHash $ head distributionDatums
+    , accumulationValue = valueToPlutus v
+    }
+
+utxoAccumulatorScript :: GYValue -> GYScript 'PlutusV3
+utxoAccumulatorScript = scriptFromPlutus . utxoAccumulatorCompiled . utxoAccumulatorParameters
+
+utxoAccumulatorBuildScript :: GYTxOutRef -> GYValue -> GYBuildPlutusScript 'PlutusV3
+utxoAccumulatorBuildScript ref = GYInReference @_ @PlutusV3 ref . utxoAccumulatorScript
+
+utxoAccumulatorAddress :: GYTxQueryMonad m => GYValue -> m GYAddress
+utxoAccumulatorAddress v =
+  let sh = scriptHashOf $ utxoAccumulatorCompiled $ utxoAccumulatorParameters v
+   in addressFromPlutus' $
+        Address
+          { addressCredential = ScriptCredential sh
+          , addressStakingCredential = Just protocolStakingCredential
+          }
+
+utxoAccumulatorSetupBytesInit :: SetupBytes
+utxoAccumulatorSetupBytesInit = mkSetup $ utxoAccumulatorVerifierSetup @N @M
+
+utxoAccumulatorDatumInit :: GYDatum
+utxoAccumulatorDatumInit =
+  let d = head accumulationDatums
+      setup = mkSetup $ utxoAccumulatorVerifierSetup @N @M
+   in datumFromPlutusData $ toBuiltinData (d, setup)

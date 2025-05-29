@@ -8,23 +8,32 @@ import GeniusYield.Test.Privnet.Ctx
 import GeniusYield.Test.Privnet.Setup
 import GeniusYield.TxBuilder
 import GeniusYield.Types
-import PlutusLedgerApi.V3 (Value)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCaseSteps)
 import ZkFold.Algebra.Class (zero)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Cardano.UtxoAccumulator.Api (addUtxo, initAccumulator, removeUtxo, switchAccumulator)
-import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress)
+import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, scriptParkingAddress, utxoAccumulatorScript)
 import ZkFold.Cardano.UtxoAccumulator.Types.Context (Context (..))
 
-fundingRun :: User -> GYAddress -> GYValue -> Ctx -> IO ()
-fundingRun treasury serverAddr serverFunds ctx = ctxRun ctx treasury $ do
-  txBodyFund <- buildTxBody $ mustHaveOutput $ mkGYTxOutNoDatum serverAddr serverFunds
-  signAndSubmitConfirmed_ txBodyFund
+fundingRun :: User -> GYAddress -> GYValue -> GYValue -> Ctx -> IO GYTxOutRef
+fundingRun treasury serverAddr serverFunds v ctx = ctxRun ctx treasury $ do
+  parkingAddr <- scriptParkingAddress
+  txBodyFund <- buildTxBody $
+    mustHaveOutput (mkGYTxOutNoDatum serverAddr serverFunds)
+    <> mustHaveOutput
+      GYTxOut
+        { gyTxOutAddress = parkingAddr
+        , gyTxOutValue = valueFromLovelace 20_000_000
+        , gyTxOutDatum = Nothing
+        , gyTxOutRefS = Just $ GYPlutusScript $ utxoAccumulatorScript v
+        }
+  txId <- signAndSubmitConfirmed txBodyFund
+  return $ txOutRefFromTuple (txId, 1)
 
-initAccumulatorRun :: GYAddress -> GYPaymentSigningKey -> GYStakeSigningKey -> Value -> Ctx -> IO (GYTxSkeleton 'PlutusV2, GYTxOutRef)
-initAccumulatorRun serverAddr serverPaymentKey serverStakeKey v ctx = runGYTxMonadIO
+initAccumulatorRun :: GYTxOutRef -> GYAddress -> GYPaymentSigningKey -> GYStakeSigningKey -> GYValue -> Ctx -> IO (GYTxSkeleton 'PlutusV2, Context)
+initAccumulatorRun ctxAccumulatorScriptRef serverAddr serverPaymentKey serverStakeKey ctxAccumulationValue ctx = runGYTxMonadIO
   (ctxNetworkId ctx)
   (ctxProviders ctx)
   (AGYPaymentSigningKey serverPaymentKey)
@@ -33,29 +42,30 @@ initAccumulatorRun serverAddr serverPaymentKey serverStakeKey v ctx = runGYTxMon
   serverAddr
   Nothing
   $ do
-    ttRef <- head <$> utxoRefsAtAddress serverAddr
-    txSkel <- initAccumulator v `runReaderT` Context ttRef v
+    ctxThreadTokenRef <- head <$> utxoRefsAtAddress serverAddr
+    let context = Context {..}
+    txSkel <- initAccumulator `runReaderT` Context {..}
     txBody <- buildTxBody txSkel
     submitTxBodyConfirmed_ txBody [serverPaymentKey]
-    return (txSkel, ttRef)
+    return (txSkel, context)
 
-addUtxoRun :: GYTxOutRef -> GYAddress -> GYAddress -> ScalarFieldOf BLS12_381_G1_Point -> Value -> User -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
-addUtxoRun ttRef serverAddr recipient r v u ctx = runGYTxMonadIO
+addUtxoRun :: Context -> GYAddress -> GYAddress -> ScalarFieldOf BLS12_381_G1_Point -> User -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
+addUtxoRun context serverAddr recipient r u ctx = runGYTxMonadIO
   (ctxNetworkId ctx)
   (ctxProviders ctx)
   (AGYPaymentSigningKey $ userPaymentSKey u)
   (AGYStakeSigningKey <$> userStakeSKey u)
-  [serverAddr]
-  serverAddr
+  [userAddr u]
+  (userAddr u)
   Nothing
   $ do
-    txSkel <- addUtxo serverAddr recipient r `runReaderT` Context ttRef v
+    txSkel <- addUtxo serverAddr recipient r `runReaderT` context
     txBody <- buildTxBody txSkel
     submitTxBodyConfirmed_ txBody [AGYPaymentSigningKey $ userPaymentSKey u]
     return txSkel
 
-switchAccumulatorRun :: GYTxOutRef -> GYAddress -> GYPaymentSigningKey -> GYStakeSigningKey -> Value -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
-switchAccumulatorRun ttRef serverAddr serverPaymentKey serverStakeKey v ctx = runGYTxMonadIO
+switchAccumulatorRun :: Context -> GYAddress -> GYPaymentSigningKey -> GYStakeSigningKey -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
+switchAccumulatorRun context serverAddr serverPaymentKey serverStakeKey ctx = runGYTxMonadIO
   (ctxNetworkId ctx)
   (ctxProviders ctx)
   (AGYPaymentSigningKey serverPaymentKey)
@@ -64,13 +74,13 @@ switchAccumulatorRun ttRef serverAddr serverPaymentKey serverStakeKey v ctx = ru
   serverAddr
   Nothing
   $ do
-    txSkel <- switchAccumulator `runReaderT` Context ttRef v
+    txSkel <- switchAccumulator `runReaderT` context
     txBody <- buildTxBody txSkel
     submitTxBodyConfirmed_ txBody [serverPaymentKey]
     return txSkel
 
-removeUtxoRun :: GYTxOutRef -> GYAddress -> GYPaymentSigningKey -> GYStakeSigningKey -> Value -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
-removeUtxoRun ttRef serverAddr serverPaymentKey serverStakeKey v ctx = runGYTxMonadIO
+removeUtxoRun :: Context -> GYAddress -> GYPaymentSigningKey -> GYStakeSigningKey -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
+removeUtxoRun context serverAddr serverPaymentKey serverStakeKey ctx = runGYTxMonadIO
   (ctxNetworkId ctx)
   (ctxProviders ctx)
   (AGYPaymentSigningKey serverPaymentKey)
@@ -79,7 +89,7 @@ removeUtxoRun ttRef serverAddr serverPaymentKey serverStakeKey v ctx = runGYTxMo
   serverAddr
   Nothing
   $ do
-    txSkel <- removeUtxo `runReaderT` Context ttRef v
+    txSkel <- removeUtxo `runReaderT` context
     txBody <- buildTxBody txSkel
     submitTxBodyConfirmed_ txBody [serverPaymentKey]
     return txSkel
@@ -101,31 +111,31 @@ utxoAccumulatorTests setup =
               serverStakeKeyHash = serverStakeKey & getVerificationKey & verificationKeyHash
               serverAddr = addressFromCredential nid (GYPaymentCredentialByKey serverPaymentKeyHash) (Just $ GYStakeCredentialByKey serverStakeKeyHash)
 
-          let accumulationValue :: Value
-              accumulationValue = lovelaceValueOf 100_000_000
+          let accumulationValue :: GYValue
+              accumulationValue = valueFromLovelace 100_000_000
 
           -- Funding the server
           info $ "Server's address: " <> show serverAddr
-          fundingRun user1 serverAddr (valueFromLovelace 2500_000_000) ctx
+          scriptRef <- fundingRun user1 serverAddr (valueFromLovelace 2500_000_000) accumulationValue ctx
           ctxRunQuery ctx (utxosAtAddress serverAddr Nothing)
             >>= info . ("Funded server. Server utxos: " <>) . show
 
           -- Initializing the accumulator
-          (txInit, ttRef) <- initAccumulatorRun serverAddr serverPaymentKey serverStakeKey accumulationValue ctx
+          (txInit, context) <- initAccumulatorRun scriptRef serverAddr serverPaymentKey serverStakeKey accumulationValue ctx
           info $ "Transaction: " <> show txInit
           ctxRunQuery ctx (utxosAtAddress serverAddr Nothing)
             >>= info . ("Initialized accumulator. Server's utxos: " <>) . show
 
           -- Adding funds to the accumulator
-          txAdd <- addUtxoRun ttRef serverAddr (userAddr user2) zero accumulationValue user1 ctx
+          txAdd <- addUtxoRun context serverAddr (userAddr user2) zero user1 ctx
           info $ "Transaction: " <> show txAdd
 
           -- Switching the accumulator to distribution mode
-          txSwitch <- switchAccumulatorRun ttRef serverAddr serverPaymentKey serverStakeKey accumulationValue ctx
+          txSwitch <- switchAccumulatorRun context serverAddr serverPaymentKey serverStakeKey ctx
           info $ "Transaction: " <> show txSwitch
 
           -- Removing funds from the accumulator
-          txRemove <- removeUtxoRun ttRef serverAddr serverPaymentKey serverStakeKey accumulationValue ctx
+          txRemove <- removeUtxoRun context serverAddr serverPaymentKey serverStakeKey ctx
           info $ "Transaction: " <> show txRemove
 
           ctxRunQuery ctx (utxosAtAddress protocolTreasuryAddress Nothing)
