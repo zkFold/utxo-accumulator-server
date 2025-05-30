@@ -42,9 +42,6 @@ scriptParkingAddress =
 
 -- Protocol parameters
 
-serverDeposit :: GYValue
-serverDeposit = valueFromLovelace 2_000_000
-
 serverFee :: GYValue
 serverFee = valueFromLovelace 5_000_000
 

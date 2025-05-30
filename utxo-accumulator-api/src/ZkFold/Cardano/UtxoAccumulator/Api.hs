@@ -33,7 +33,7 @@ initAccumulator = do
       <> mustHaveOutput
         GYTxOut
           { gyTxOutAddress = accAddr
-          , gyTxOutValue = serverDeposit <> t
+          , gyTxOutValue = t
           , gyTxOutDatum = Just (utxoAccumulatorDatumInit, GYTxOutUseInlineDatum)
           , gyTxOutRefS = Nothing
           }
