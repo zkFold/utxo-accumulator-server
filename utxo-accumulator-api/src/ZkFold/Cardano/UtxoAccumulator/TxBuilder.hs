@@ -14,17 +14,25 @@ import ZkFold.Cardano.UtxoAccumulator.Sync (findUnusedTransactionData, fullSync)
 import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper)
 import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config(..))
 
-runBuilderWithConfig :: Config -> GYTxQueryMonadIO a -> IO a
-runBuilderWithConfig cfg = runGYTxQueryMonadIO
+runQueryWithConfig :: Config -> GYTxQueryMonadIO a -> IO a
+runQueryWithConfig cfg = runGYTxQueryMonadIO
     (cfgNetworkId cfg)
     (cfgProviders cfg)
+
+runBuilderWithConfig :: Config -> GYAddress -> GYTxBuilderMonadIO a -> IO a
+runBuilderWithConfig cfg addr = runGYTxBuilderMonadIO
+    (cfgNetworkId cfg)
+    (cfgProviders cfg)
+    [addr]
+    addr
+    Nothing
 
 runSignerWithConfig :: Config -> GYTxMonadIO a -> IO a
 runSignerWithConfig cfg = runGYTxMonadIO
     (cfgNetworkId cfg)
     (cfgProviders cfg)
-    (AGYPaymentSigningKey $ cfgPaymentKey cfg)
-    (AGYStakeSigningKey <$> cfgStakeKey cfg)
+    (cfgPaymentKey cfg)
+    (cfgStakeKey cfg)
     [cfgAddress cfg]
     (cfgAddress cfg)
     Nothing
@@ -34,8 +42,8 @@ postScriptRun ::
   IO Config
 postScriptRun cfg@Config {..} = do
   -- Build the transaction skeleton
-  txSkel <- runBuilderWithConfig cfg $ postScript cfgAccumulationValue
-  
+  txSkel <- runQueryWithConfig cfg $ postScript cfgAccumulationValue
+
   -- Sign and submit the transaction
   txId <- runSignerWithConfig cfg $ do
     txBody <- buildTxBody txSkel
@@ -46,7 +54,7 @@ initAccumulatorRun ::
   Config ->
   IO Config
 initAccumulatorRun cfg@Config {..} = do
-  removeUtxoAccumulatorData cfgDatabase
+  removeUtxoAccumulatorData cfgDatabasePath
   runSignerWithConfig cfg $ do
     (txSkel, ref) <- initAccumulator cfgAddress cfgAccumulationValue
     txBody <- buildTxBody txSkel
@@ -56,22 +64,24 @@ initAccumulatorRun cfg@Config {..} = do
 addUtxoRun ::
   Config ->
   GYAddress ->
+  GYAddress ->
   ScalarFieldOf BLS12_381_G1_Point ->
-  IO (GYTxSkeleton 'PlutusV3)
-addUtxoRun cfg@Config {..} recipient r  = do
+  IO GYTx
+addUtxoRun cfg@Config {..} sender recipient r  = do
   -- Update the UTXO accumulator data
-  m <- getUtxoAccumulatorData cfgDatabase
-  putUtxoAccumulatorData cfgDatabase $ insert recipient r m
+  m <- getUtxoAccumulatorData cfgDatabasePath
+  putUtxoAccumulatorData cfgDatabasePath $ insert recipient r m
 
   -- Build the transaction skeleton
-  runBuilderWithConfig cfg $
-    addUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) recipient r
+  runBuilderWithConfig cfg sender $ do
+    txSkel <- addUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) recipient r
+    unsignedTx <$> buildTxBody txSkel
 
 removeUtxoRun :: Config -> IO ()
 removeUtxoRun cfg@Config {..} = do
   -- Get the UTXO accumulator data
-  m <- getUtxoAccumulatorData cfgDatabase
-  (nId, txOut) <- runBuilderWithConfig cfg $ do
+  m <- getUtxoAccumulatorData cfgDatabasePath
+  (nId, txOut) <- runQueryWithConfig cfg $ do
     nId <- networkId
     stateRef <- fromJust <$> getState (threadToken $ fromJust cfgMaybeThreadTokenRef)
     (nId,) . fromJust <$> getOutput stateRef

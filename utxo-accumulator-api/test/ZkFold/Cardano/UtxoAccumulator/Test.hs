@@ -32,8 +32,8 @@ utxoAccumulatorTests setup =
               user2 = ctxUser2 ctx
 
           -- Generating server keys
-          serverPaymentKey :: GYSigningKey 'GYKeyRolePayment <- generateSigningKey
-          serverStakeKey :: GYSigningKey 'GYKeyRoleStaking <- generateSigningKey
+          serverPaymentKey <- generateSigningKey
+          serverStakeKey <-  generateSigningKey
           let serverPaymentKeyHash = serverPaymentKey & getVerificationKey & verificationKeyHash
               serverStakeKeyHash = serverStakeKey & getVerificationKey & verificationKeyHash
               serverAddr = addressFromCredential nid (GYPaymentCredentialByKey serverPaymentKeyHash) (Just $ GYStakeCredentialByKey serverStakeKeyHash)
@@ -41,10 +41,10 @@ utxoAccumulatorTests setup =
           let cfg = Config
                 { cfgNetworkId = nid
                 , cfgProviders = ctxProviders ctx
-                , cfgPaymentKey = serverPaymentKey
-                , cfgStakeKey = Just serverStakeKey
+                , cfgPaymentKey = AGYPaymentSigningKey serverPaymentKey
+                , cfgStakeKey = Just $ AGYStakeSigningKey serverStakeKey
                 , cfgAddress = serverAddr
-                , cfgDatabase = "txs.json"
+                , cfgDatabasePath = "txs.json"
                 , cfgAccumulationValue = valueFromLovelace 100_000_000
                 , cfgMaybeScriptRef = Nothing
                 , cfgMaybeThreadTokenRef = Nothing
@@ -74,14 +74,17 @@ utxoAccumulatorTests setup =
             >>= info . ("Initialized accumulator. Server's utxos: " <>) . show
 
           -- Adding funds to the accumulator
-          let addr = userAddr user2
+          let sender    = userAddr user1
+              recipient = userAddr user2
               r = toZp 42
-          txSkel <- addUtxoRun cfg'' addr r
+          tx <- addUtxoRun cfg'' sender recipient r
 
           -- User signs and submits the transaction
-          runSignerWithConfig cfg { cfgPaymentKey = userPaymentSKey user1, cfgStakeKey = userStakeSKey user1, cfgAddress = userAddr user1} $ do
-            txBody <- buildTxBody txSkel
-            submitTxBodyConfirmed_ txBody [AGYPaymentSigningKey $ userPaymentSKey user1]
+          runSignerWithConfig cfg
+            { cfgPaymentKey = AGYPaymentSigningKey $ userPaymentSKey user1
+            , cfgStakeKey = AGYStakeSigningKey <$> userStakeSKey user1
+            , cfgAddress = userAddr user1} $
+            submitTxConfirmed_ $ signGYTx tx [userPaymentSKey user1]
           ctxRunQuery ctx (utxosAtAddress serverAddr Nothing)
             >>= info . ("Added a utxo to accumulator. Server's utxos: " <>) . show
 

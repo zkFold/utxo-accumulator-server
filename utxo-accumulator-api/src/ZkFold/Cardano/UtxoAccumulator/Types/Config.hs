@@ -1,15 +1,15 @@
 module ZkFold.Cardano.UtxoAccumulator.Types.Config where
 
 import Prelude (Maybe, FilePath)
-import GeniusYield.Types (GYNetworkId, GYProviders, GYPaymentSigningKey, GYStakeSigningKey, GYAddress, GYTxOutRef, GYValue)
+import GeniusYield.Types (GYNetworkId, GYProviders, GYAddress, GYTxOutRef, GYValue, GYSomePaymentSigningKey, GYSomeStakeSigningKey)
 
 data Config = Config
   { cfgNetworkId           :: GYNetworkId
   , cfgProviders           :: GYProviders
-  , cfgPaymentKey          :: GYPaymentSigningKey
-  , cfgStakeKey            :: Maybe GYStakeSigningKey
+  , cfgDatabasePath        :: FilePath
+  , cfgPaymentKey          :: GYSomePaymentSigningKey
+  , cfgStakeKey            :: Maybe GYSomeStakeSigningKey
   , cfgAddress             :: GYAddress
-  , cfgDatabase            :: FilePath
   , cfgAccumulationValue   :: GYValue
   , cfgMaybeScriptRef      :: Maybe GYTxOutRef
   , cfgMaybeThreadTokenRef :: Maybe GYTxOutRef

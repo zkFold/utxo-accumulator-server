@@ -38,6 +38,17 @@ common common
 library
   import: common
   exposed-modules:
+    ZkFold.Cardano.UtxoAccumulator.Server.Api
+    ZkFold.Cardano.UtxoAccumulator.Server.Api.Settings
+    ZkFold.Cardano.UtxoAccumulator.Server.Api.Tx
+    ZkFold.Cardano.UtxoAccumulator.Server.Auth
+    ZkFold.Cardano.UtxoAccumulator.Server.Config
+    ZkFold.Cardano.UtxoAccumulator.Server.Options
+    ZkFold.Cardano.UtxoAccumulator.Server.Orphans
+    ZkFold.Cardano.UtxoAccumulator.Server.ErrorMiddleware
+    ZkFold.Cardano.UtxoAccumulator.Server.RequestLoggerMiddleware
+    ZkFold.Cardano.UtxoAccumulator.Server.Run
+    ZkFold.Cardano.UtxoAccumulator.Server.Utils
 
   other-modules:
     PackageInfo_utxo_accumulator_server
@@ -45,8 +56,6 @@ library
   autogen-modules:
     PackageInfo_utxo_accumulator_server
 
-  -- other-modules:
-  -- other-extensions:
   build-depends:
     aeson,
     atlas-cardano,
@@ -73,6 +82,7 @@ library
     sqlite-simple,
     stm,
     swagger2,
+    symbolic-base,
     text,
     time,
     time-manager,
