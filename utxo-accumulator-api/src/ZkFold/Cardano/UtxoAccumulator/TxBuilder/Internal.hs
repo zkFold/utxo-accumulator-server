@@ -1,4 +1,4 @@
-module ZkFold.Cardano.UtxoAccumulator.Api (
+module ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (
   initAccumulator,
   addUtxo,
   removeUtxo,
@@ -10,7 +10,7 @@ import GeniusYield.TxBuilder (GYTxSkeleton, addressFromPlutus', mustHaveInput, m
 import GeniusYield.Types
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
-import ZkFold.Cardano.UtxoAccumulator.Api.Utils (getOutput, getState)
+import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils (getOutput, getState)
 import ZkFold.Cardano.UtxoAccumulator.Constants
 import ZkFold.Cardano.UtxoAccumulator.Transition (mkAddUtxo, mkRemoveUtxo)
 import ZkFold.Cardano.UtxoAccumulator.Types (UtxoAccumulatorQueryMonad)

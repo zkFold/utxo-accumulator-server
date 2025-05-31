@@ -38,14 +38,15 @@ common common
 library
   import: common
   exposed-modules:
-    ZkFold.Cardano.UtxoAccumulator.Api
-    ZkFold.Cardano.UtxoAccumulator.Api.Utils
     ZkFold.Cardano.UtxoAccumulator.Constants
     ZkFold.Cardano.UtxoAccumulator.Database
     ZkFold.Cardano.UtxoAccumulator.Datum
     ZkFold.Cardano.UtxoAccumulator.Precompute
     ZkFold.Cardano.UtxoAccumulator.Sync
     ZkFold.Cardano.UtxoAccumulator.Transition
+    ZkFold.Cardano.UtxoAccumulator.TxBuilder
+    ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal
+    ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils
     ZkFold.Cardano.UtxoAccumulator.Types
     ZkFold.Cardano.UtxoAccumulator.Types.Context
     ZkFold.Cardano.UtxoAccumulator.Types.Errors
