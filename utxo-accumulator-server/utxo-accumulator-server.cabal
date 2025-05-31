@@ -43,9 +43,9 @@ library
     ZkFold.Cardano.UtxoAccumulator.Server.Api.Tx
     ZkFold.Cardano.UtxoAccumulator.Server.Auth
     ZkFold.Cardano.UtxoAccumulator.Server.Config
+    ZkFold.Cardano.UtxoAccumulator.Server.ErrorMiddleware
     ZkFold.Cardano.UtxoAccumulator.Server.Options
     ZkFold.Cardano.UtxoAccumulator.Server.Orphans
-    ZkFold.Cardano.UtxoAccumulator.Server.ErrorMiddleware
     ZkFold.Cardano.UtxoAccumulator.Server.RequestLoggerMiddleware
     ZkFold.Cardano.UtxoAccumulator.Server.Run
     ZkFold.Cardano.UtxoAccumulator.Server.Utils
