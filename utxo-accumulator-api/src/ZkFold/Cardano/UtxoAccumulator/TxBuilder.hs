@@ -1,91 +1,86 @@
 module ZkFold.Cardano.UtxoAccumulator.TxBuilder where
 
-import Control.Monad.Reader (runReaderT)
 import Data.Map (insert)
 import Data.Maybe (fromJust)
-import GeniusYield.Test.Privnet.Ctx
 import GeniusYield.TxBuilder
 import GeniusYield.Types
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
-import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (addUtxo, initAccumulator, removeUtxo)
+import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (addUtxo, initAccumulator, removeUtxo, postScript)
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils (getOutput, getState)
 import ZkFold.Cardano.UtxoAccumulator.Constants (threadToken)
-import ZkFold.Cardano.UtxoAccumulator.Database (getUtxoAccumulatorData, putUtxoAccumulatorData)
+import ZkFold.Cardano.UtxoAccumulator.Database (getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
 import ZkFold.Cardano.UtxoAccumulator.Sync (findUnusedTransactionData, fullSync)
 import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper)
-import ZkFold.Cardano.UtxoAccumulator.Types.Context (Context (..))
+import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config(..))
 
-initAccumulatorRun :: GYTxOutRef -> GYAddress -> GYPaymentSigningKey -> GYStakeSigningKey -> GYValue -> Ctx -> IO (GYTxSkeleton 'PlutusV2, Context)
-initAccumulatorRun ctxAccumulatorScriptRef serverAddr serverPaymentKey serverStakeKey ctxAccumulationValue ctx = runGYTxMonadIO
-  (ctxNetworkId ctx)
-  (ctxProviders ctx)
-  (AGYPaymentSigningKey serverPaymentKey)
-  (Just $ AGYStakeSigningKey serverStakeKey)
-  [serverAddr]
-  serverAddr
-  Nothing
-  $ do
-    ctxThreadTokenRef <- head <$> utxoRefsAtAddress serverAddr
-    let context = Context {..}
-    txSkel <- initAccumulator `runReaderT` Context {..}
+runBuilderWithConfig :: Config -> GYTxQueryMonadIO a -> IO a
+runBuilderWithConfig cfg = runGYTxQueryMonadIO
+    (cfgNetworkId cfg)
+    (cfgProviders cfg)
+
+runSignerWithConfig :: Config -> GYTxMonadIO a -> IO a
+runSignerWithConfig cfg = runGYTxMonadIO
+    (cfgNetworkId cfg)
+    (cfgProviders cfg)
+    (AGYPaymentSigningKey $ cfgPaymentKey cfg)
+    (AGYStakeSigningKey <$> cfgStakeKey cfg)
+    [cfgAddress cfg]
+    (cfgAddress cfg)
+    Nothing
+
+postScriptRun ::
+  Config ->
+  IO Config
+postScriptRun cfg@Config {..} = do
+  -- Build the transaction skeleton
+  txSkel <- runBuilderWithConfig cfg $ postScript cfgAccumulationValue
+  
+  -- Sign and submit the transaction
+  txId <- runSignerWithConfig cfg $ do
     txBody <- buildTxBody txSkel
-    submitTxBodyConfirmed_ txBody [serverPaymentKey]
-    return (txSkel, context)
+    signAndSubmitConfirmed txBody
+  return $ cfg { cfgMaybeScriptRef = Just $ txOutRefFromTuple (txId, 0) }
 
-addUtxoRun :: FilePath -> Context -> GYAddress -> ScalarFieldOf BLS12_381_G1_Point -> User -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
-addUtxoRun fp context recipient r u ctx = do
-  m <- getUtxoAccumulatorData fp
-  putUtxoAccumulatorData fp $ insert recipient r m
-  runGYTxMonadIO
-    (ctxNetworkId ctx)
-    (ctxProviders ctx)
-    (AGYPaymentSigningKey $ userPaymentSKey u)
-    (AGYStakeSigningKey <$> userStakeSKey u)
-    [userAddr u]
-    (userAddr u)
-    Nothing
-    $ do
-      txSkel <- addUtxo recipient r `runReaderT` context
-      txBody <- buildTxBody txSkel
-      submitTxBodyConfirmed_ txBody [AGYPaymentSigningKey $ userPaymentSKey u]
-      return txSkel
+initAccumulatorRun ::
+  Config ->
+  IO Config
+initAccumulatorRun cfg@Config {..} = do
+  removeUtxoAccumulatorData cfgDatabase
+  runSignerWithConfig cfg $ do
+    (txSkel, ref) <- initAccumulator cfgAddress cfgAccumulationValue
+    txBody <- buildTxBody txSkel
+    submitTxBodyConfirmed_ txBody [cfgPaymentKey]
+    return $ cfg { cfgMaybeThreadTokenRef = Just ref }
 
-removeUtxoRun ::
-  FilePath ->
-  Context ->
+addUtxoRun ::
+  Config ->
   GYAddress ->
-  GYPaymentSigningKey ->
-  GYStakeSigningKey ->
-  Ctx ->
+  ScalarFieldOf BLS12_381_G1_Point ->
   IO (GYTxSkeleton 'PlutusV3)
-removeUtxoRun fp context serverAddr serverPaymentKey serverStakeKey ctx = do
-  m <- getUtxoAccumulatorData fp
-  (nId, txOut) <- runGYTxMonadIO
-    (ctxNetworkId ctx)
-    (ctxProviders ctx)
-    (AGYPaymentSigningKey serverPaymentKey)
-    (Just $ AGYStakeSigningKey serverStakeKey)
-    [serverAddr]
-    serverAddr
-    Nothing
-    $ do
-      nId <- networkId
-      stateRef <- fromJust <$> getState (threadToken $ ctxThreadTokenRef context)
-      (nId,) . fromJust <$> getOutput stateRef
+addUtxoRun cfg@Config {..} recipient r  = do
+  -- Update the UTXO accumulator data
+  m <- getUtxoAccumulatorData cfgDatabase
+  putUtxoAccumulatorData cfgDatabase $ insert recipient r m
+
+  -- Build the transaction skeleton
+  runBuilderWithConfig cfg $
+    addUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) recipient r
+
+removeUtxoRun :: Config -> IO ()
+removeUtxoRun cfg@Config {..} = do
+  -- Get the UTXO accumulator data
+  m <- getUtxoAccumulatorData cfgDatabase
+  (nId, txOut) <- runBuilderWithConfig cfg $ do
+    nId <- networkId
+    stateRef <- fromJust <$> getState (threadToken $ fromJust cfgMaybeThreadTokenRef)
+    (nId,) . fromJust <$> getOutput stateRef
   (_, as) <- fullSync nId txOut
   let (recipient, r) = fromJust $ findUnusedTransactionData m as
       hs = [utxoAccumulatorHashWrapper (addressToPlutus recipient) r]
-  runGYTxMonadIO
-    (ctxNetworkId ctx)
-    (ctxProviders ctx)
-    (AGYPaymentSigningKey serverPaymentKey)
-    (Just $ AGYStakeSigningKey serverStakeKey)
-    [serverAddr]
-    serverAddr
-    Nothing
-    $ do
-      txSkel <- removeUtxo serverAddr hs as recipient r `runReaderT` context
-      txBody <- buildTxBody txSkel
-      submitTxBodyConfirmed_ txBody [serverPaymentKey]
-      return txSkel
+
+  -- Build, sign, and submit the transaction
+  runSignerWithConfig cfg $ do
+    txSkel <- removeUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress hs as recipient r
+    txBody <- buildTxBody txSkel
+    submitTxBodyConfirmed_ txBody [cfgPaymentKey]

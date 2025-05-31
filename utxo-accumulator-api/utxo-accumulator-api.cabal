@@ -48,9 +48,8 @@ library
     ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal
     ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils
     ZkFold.Cardano.UtxoAccumulator.Types
-    ZkFold.Cardano.UtxoAccumulator.Types.Context
+    ZkFold.Cardano.UtxoAccumulator.Types.Config
     ZkFold.Cardano.UtxoAccumulator.Types.Errors
-    ZkFold.Cardano.UtxoAccumulator.Types.Monad
     ZkFold.Cardano.UtxoAccumulator.Utils
 
   -- other-modules:
