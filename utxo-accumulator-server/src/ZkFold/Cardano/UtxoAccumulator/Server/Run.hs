@@ -5,6 +5,7 @@ module ZkFold.Cardano.UtxoAccumulator.Server.Run (
 import Control.Exception (Exception (..), SomeException, try)
 import Control.Monad.Except (ExceptT (..))
 import Data.ByteString qualified as B
+import Data.Maybe (fromJust)
 import Data.Text.Lazy qualified as LT
 import Data.Version (showVersion)
 import Data.Yaml.Pretty qualified as Yaml
@@ -26,8 +27,7 @@ import ZkFold.Cardano.UtxoAccumulator.Server.Config (ServerConfig (..), coreConf
 import ZkFold.Cardano.UtxoAccumulator.Server.ErrorMiddleware
 import ZkFold.Cardano.UtxoAccumulator.Server.RequestLoggerMiddleware (gcpReqLogger)
 import ZkFold.Cardano.UtxoAccumulator.Server.Utils
-import ZkFold.Cardano.UtxoAccumulator.Types (Config(..))
-import Data.Maybe (fromJust)
+import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
 
 runServer :: Maybe FilePath -> IO ()
 runServer mfp = do
@@ -62,17 +62,18 @@ runServer mfp = do
           & Warp.setOnException onException
           & Warp.setOnExceptionResponse onExceptionResponse
       errLoggerMiddleware = errorLoggerMiddleware $ logErrorS . LT.unpack
-      cfg = Config
-        { cfgNetworkId = scNetworkId
-        , cfgProviders = providers
-        , cfgPaymentKey = serverPaymentKey
-        , cfgStakeKey = Just serverStakeKey
-        , cfgAddress = serverAddr
-        , cfgDatabasePath = scDatabasePath
-        , cfgAccumulationValue = scAccumulationValue
-        , cfgMaybeScriptRef = scMaybeScriptRef
-        , cfgMaybeThreadTokenRef = scMaybeThreadTokenRef
-        }
+      cfg =
+        Config
+          { cfgNetworkId = scNetworkId
+          , cfgProviders = providers
+          , cfgPaymentKey = serverPaymentKey
+          , cfgStakeKey = Just serverStakeKey
+          , cfgAddress = serverAddr
+          , cfgDatabasePath = scDatabasePath
+          , cfgAccumulationValue = scAccumulationValue
+          , cfgMaybeScriptRef = scMaybeScriptRef
+          , cfgMaybeThreadTokenRef = scMaybeThreadTokenRef
+          }
 
     logInfoS $
       "Starting UTxO Accumulator server on port "

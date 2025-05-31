@@ -6,27 +6,28 @@ module ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (
 ) where
 
 import Data.Maybe (fromJust)
-import GeniusYield.TxBuilder (GYTxSkeleton, addressFromPlutus', mustHaveInput, mustHaveOutput, mustMint, utxoRefsAtAddress, GYTxQueryMonad)
+import GeniusYield.TxBuilder (GYTxQueryMonad, GYTxSkeleton, addressFromPlutus', mustHaveInput, mustHaveOutput, mustMint, utxoRefsAtAddress)
 import GeniusYield.Types
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
-import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils (getOutput, getState)
 import ZkFold.Cardano.UtxoAccumulator.Constants
 import ZkFold.Cardano.UtxoAccumulator.Transition (mkAddUtxo, mkRemoveUtxo)
+import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils (getOutput, getState)
 
-postScript :: 
+postScript ::
   GYTxQueryMonad m =>
   GYValue ->
   m (GYTxSkeleton 'PlutusV2)
 postScript accumulationValue = do
   parkingAddr <- scriptParkingAddress
-  return $ mustHaveOutput
-    GYTxOut
-      { gyTxOutAddress = parkingAddr
-      , gyTxOutValue = valueFromLovelace 20_000_000
-      , gyTxOutDatum = Nothing
-      , gyTxOutRefS = Just $ GYPlutusScript $ utxoAccumulatorScript accumulationValue
-      }
+  return $
+    mustHaveOutput
+      GYTxOut
+        { gyTxOutAddress = parkingAddr
+        , gyTxOutValue = valueFromLovelace 20_000_000
+        , gyTxOutDatum = Nothing
+        , gyTxOutRefS = Just $ GYPlutusScript $ utxoAccumulatorScript accumulationValue
+        }
 
 initAccumulator ::
   GYTxQueryMonad m =>
@@ -37,20 +38,21 @@ initAccumulator serverAddr accumulationValue = do
   ref <- head <$> utxoRefsAtAddress serverAddr
   let t = valueSingleton (threadToken ref) 1
   accAddr <- utxoAccumulatorAddress accumulationValue
-  return $ (, ref) $
-    mustHaveInput
-      GYTxIn
-        { gyTxInTxOutRef = ref
-        , gyTxInWitness = GYTxInWitnessKey
-        }
-      <> mustMint (GYBuildPlutusScript $ GYBuildPlutusScriptInlined $ threadTokenPolicy ref) unitRedeemer threadTokenName 1
-      <> mustHaveOutput
-        GYTxOut
-          { gyTxOutAddress = accAddr
-          , gyTxOutValue = t
-          , gyTxOutDatum = Just (utxoAccumulatorDatumInit, GYTxOutUseInlineDatum)
-          , gyTxOutRefS = Nothing
+  return $
+    (,ref) $
+      mustHaveInput
+        GYTxIn
+          { gyTxInTxOutRef = ref
+          , gyTxInWitness = GYTxInWitnessKey
           }
+        <> mustMint (GYBuildPlutusScript $ GYBuildPlutusScriptInlined $ threadTokenPolicy ref) unitRedeemer threadTokenName 1
+        <> mustHaveOutput
+          GYTxOut
+            { gyTxOutAddress = accAddr
+            , gyTxOutValue = t
+            , gyTxOutDatum = Just (utxoAccumulatorDatumInit, GYTxOutUseInlineDatum)
+            , gyTxOutRefS = Nothing
+            }
 
 addUtxo ::
   GYTxQueryMonad m =>

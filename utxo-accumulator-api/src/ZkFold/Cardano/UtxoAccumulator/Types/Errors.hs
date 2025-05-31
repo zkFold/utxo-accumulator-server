@@ -5,10 +5,10 @@ import GeniusYield.HTTP.Errors (GYApiError (..), IsGYApiError (..))
 import Network.HTTP.Types (status400, status500)
 
 data UtxoAccumulatorError
-  -- | An internal error occurred in the UTXO accumulator.
-  = UtxoAccumulatorInternalError
-  -- | An error occurred due to invalid input in the UTXO accumulator.
-  | UtxoAccumulatorInputError
+  = -- | An internal error occurred in the UTXO accumulator.
+    UtxoAccumulatorInternalError
+  | -- | An error occurred due to invalid input in the UTXO accumulator.
+    UtxoAccumulatorInputError
   deriving stock Show
   deriving anyclass Exception
 

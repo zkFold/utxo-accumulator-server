@@ -6,21 +6,23 @@ import GeniusYield.TxBuilder
 import GeniusYield.Types
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
-import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (addUtxo, initAccumulator, removeUtxo, postScript)
-import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils (getOutput, getState)
 import ZkFold.Cardano.UtxoAccumulator.Constants (threadToken)
 import ZkFold.Cardano.UtxoAccumulator.Database (getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
 import ZkFold.Cardano.UtxoAccumulator.Sync (findUnusedTransactionData, fullSync)
 import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper)
-import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config(..))
+import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (addUtxo, initAccumulator, postScript, removeUtxo)
+import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils (getOutput, getState)
+import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
 
 runQueryWithConfig :: Config -> GYTxQueryMonadIO a -> IO a
-runQueryWithConfig cfg = runGYTxQueryMonadIO
+runQueryWithConfig cfg =
+  runGYTxQueryMonadIO
     (cfgNetworkId cfg)
     (cfgProviders cfg)
 
 runBuilderWithConfig :: Config -> GYAddress -> GYTxBuilderMonadIO a -> IO a
-runBuilderWithConfig cfg addr = runGYTxBuilderMonadIO
+runBuilderWithConfig cfg addr =
+  runGYTxBuilderMonadIO
     (cfgNetworkId cfg)
     (cfgProviders cfg)
     [addr]
@@ -28,7 +30,8 @@ runBuilderWithConfig cfg addr = runGYTxBuilderMonadIO
     Nothing
 
 runSignerWithConfig :: Config -> GYTxMonadIO a -> IO a
-runSignerWithConfig cfg = runGYTxMonadIO
+runSignerWithConfig cfg =
+  runGYTxMonadIO
     (cfgNetworkId cfg)
     (cfgProviders cfg)
     (cfgPaymentKey cfg)
@@ -48,7 +51,7 @@ postScriptRun cfg@Config {..} = do
   txId <- runSignerWithConfig cfg $ do
     txBody <- buildTxBody txSkel
     signAndSubmitConfirmed txBody
-  return $ cfg { cfgMaybeScriptRef = Just $ txOutRefFromTuple (txId, 0) }
+  return $ cfg {cfgMaybeScriptRef = Just $ txOutRefFromTuple (txId, 0)}
 
 initAccumulatorRun ::
   Config ->
@@ -59,7 +62,7 @@ initAccumulatorRun cfg@Config {..} = do
     (txSkel, ref) <- initAccumulator cfgAddress cfgAccumulationValue
     txBody <- buildTxBody txSkel
     submitTxBodyConfirmed_ txBody [cfgPaymentKey]
-    return $ cfg { cfgMaybeThreadTokenRef = Just ref }
+    return $ cfg {cfgMaybeThreadTokenRef = Just ref}
 
 addUtxoRun ::
   Config ->
@@ -67,7 +70,7 @@ addUtxoRun ::
   GYAddress ->
   ScalarFieldOf BLS12_381_G1_Point ->
   IO GYTx
-addUtxoRun cfg@Config {..} sender recipient r  = do
+addUtxoRun cfg@Config {..} sender recipient r = do
   -- Update the UTXO accumulator data
   m <- getUtxoAccumulatorData cfgDatabasePath
   putUtxoAccumulatorData cfgDatabasePath $ insert recipient r m

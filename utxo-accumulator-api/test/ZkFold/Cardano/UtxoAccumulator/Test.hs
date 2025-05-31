@@ -10,9 +10,9 @@ import GeniusYield.Types
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCaseSteps)
 import ZkFold.Algebra.Field (toZp)
-import ZkFold.Cardano.UtxoAccumulator.TxBuilder
 import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, utxoAccumulatorAddress, utxoAccumulatorScript)
-import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config(..))
+import ZkFold.Cardano.UtxoAccumulator.TxBuilder
+import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
 
 fundingRun :: User -> GYAddress -> GYValue -> Ctx -> IO ()
 fundingRun treasury serverAddr serverFunds ctx = ctxRun ctx treasury $ do
@@ -33,22 +33,23 @@ utxoAccumulatorTests setup =
 
           -- Generating server keys
           serverPaymentKey <- generateSigningKey
-          serverStakeKey <-  generateSigningKey
+          serverStakeKey <- generateSigningKey
           let serverPaymentKeyHash = serverPaymentKey & getVerificationKey & verificationKeyHash
               serverStakeKeyHash = serverStakeKey & getVerificationKey & verificationKeyHash
               serverAddr = addressFromCredential nid (GYPaymentCredentialByKey serverPaymentKeyHash) (Just $ GYStakeCredentialByKey serverStakeKeyHash)
 
-          let cfg = Config
-                { cfgNetworkId = nid
-                , cfgProviders = ctxProviders ctx
-                , cfgPaymentKey = AGYPaymentSigningKey serverPaymentKey
-                , cfgStakeKey = Just $ AGYStakeSigningKey serverStakeKey
-                , cfgAddress = serverAddr
-                , cfgDatabasePath = "txs.json"
-                , cfgAccumulationValue = valueFromLovelace 100_000_000
-                , cfgMaybeScriptRef = Nothing
-                , cfgMaybeThreadTokenRef = Nothing
-                }
+          let cfg =
+                Config
+                  { cfgNetworkId = nid
+                  , cfgProviders = ctxProviders ctx
+                  , cfgPaymentKey = AGYPaymentSigningKey serverPaymentKey
+                  , cfgStakeKey = Just $ AGYStakeSigningKey serverStakeKey
+                  , cfgAddress = serverAddr
+                  , cfgDatabasePath = "txs.json"
+                  , cfgAccumulationValue = valueFromLovelace 100_000_000
+                  , cfgMaybeScriptRef = Nothing
+                  , cfgMaybeThreadTokenRef = Nothing
+                  }
 
           -- writeFileJSON "utxo-accumulator-api/accumulation-group-elements.json" (accumulationGroupElements @N @M)
           -- writeFileJSON "utxo-accumulator-api/distribution-group-elements.json" (distributionGroupElements @N @M)
@@ -74,17 +75,20 @@ utxoAccumulatorTests setup =
             >>= info . ("Initialized accumulator. Server's utxos: " <>) . show
 
           -- Adding funds to the accumulator
-          let sender    = userAddr user1
+          let sender = userAddr user1
               recipient = userAddr user2
               r = toZp 42
           tx <- addUtxoRun cfg'' sender recipient r
 
           -- User signs and submits the transaction
-          runSignerWithConfig cfg
-            { cfgPaymentKey = AGYPaymentSigningKey $ userPaymentSKey user1
-            , cfgStakeKey = AGYStakeSigningKey <$> userStakeSKey user1
-            , cfgAddress = userAddr user1} $
-            submitTxConfirmed_ $ signGYTx tx [userPaymentSKey user1]
+          runSignerWithConfig
+            cfg
+              { cfgPaymentKey = AGYPaymentSigningKey $ userPaymentSKey user1
+              , cfgStakeKey = AGYStakeSigningKey <$> userStakeSKey user1
+              , cfgAddress = userAddr user1
+              }
+            $ submitTxConfirmed_
+            $ signGYTx tx [userPaymentSKey user1]
           ctxRunQuery ctx (utxosAtAddress serverAddr Nothing)
             >>= info . ("Added a utxo to accumulator. Server's utxos: " <>) . show
 

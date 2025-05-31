@@ -10,19 +10,19 @@ import GeniusYield.Imports ((&))
 import GeniusYield.Types
 import GeniusYield.Types.OpenApi ()
 import Servant
+import ZkFold.Algebra.Class (fromConstant)
 import ZkFold.Cardano.UtxoAccumulator.Server.Orphans ()
 import ZkFold.Cardano.UtxoAccumulator.Server.Utils
-import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder (addUtxoRun)
-import ZkFold.Algebra.Class (fromConstant)
+import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
 
 type TransactionPrefix :: Symbol
 type TransactionPrefix = "transaction"
 
 data Transaction = Transaction
-  { txSender    :: !GYAddress
+  { txSender :: !GYAddress
   , txRecipient :: !GYAddress
-  , txNonce     :: !Natural
+  , txNonce :: !Natural
   }
   deriving stock (Show, Eq, Generic)
   deriving

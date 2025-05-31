@@ -16,11 +16,11 @@ import GeniusYield.Imports ((&))
 import GeniusYield.Types.OpenApi ()
 import Servant
 import Servant.OpenApi
+import ZkFold.Cardano.UtxoAccumulator.Server.Api.Settings (SettingsAPI, handleSettings)
+import ZkFold.Cardano.UtxoAccumulator.Server.Api.Tx (TransactionAPI, handleTransaction)
 import ZkFold.Cardano.UtxoAccumulator.Server.Auth (APIKeyAuthProtect, V0)
 import ZkFold.Cardano.UtxoAccumulator.Server.Orphans ()
-import ZkFold.Cardano.UtxoAccumulator.Server.Api.Settings (SettingsAPI, handleSettings)
 import ZkFold.Cardano.UtxoAccumulator.Types (Config)
-import ZkFold.Cardano.UtxoAccumulator.Server.Api.Tx (TransactionAPI, handleTransaction)
 
 -------------------------------------------------------------------------------
 -- Server's API.

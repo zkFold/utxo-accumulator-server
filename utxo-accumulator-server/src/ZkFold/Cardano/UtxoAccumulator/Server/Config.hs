@@ -51,15 +51,15 @@ data MnemonicWalletDetails = MnemonicWalletDetails
 
 -- | Configuration for the server.
 data ServerConfig = ServerConfig
-  { scNetworkId           :: !GYNetworkId
-  , scCoreProvider        :: !GYCoreProviderInfo
-  , scDatabasePath        :: !FilePath
-  , scLogging             :: ![GYLogScribeConfig]
-  , scPort                :: !Port
-  , scServerApiKey        :: !(Confidential Text)
-  , scWallet              :: !ServerWallet
-  , scAccumulationValue   :: !GYValue
-  , scMaybeScriptRef      :: !(Maybe GYTxOutRef)
+  { scNetworkId :: !GYNetworkId
+  , scCoreProvider :: !GYCoreProviderInfo
+  , scDatabasePath :: !FilePath
+  , scLogging :: ![GYLogScribeConfig]
+  , scPort :: !Port
+  , scServerApiKey :: !(Confidential Text)
+  , scWallet :: !ServerWallet
+  , scAccumulationValue :: !GYValue
+  , scMaybeScriptRef :: !(Maybe GYTxOutRef)
   , scMaybeThreadTokenRef :: !(Maybe GYTxOutRef)
   }
   deriving stock Generic
@@ -109,11 +109,12 @@ signingKeysFromServerWallet nid (MnemonicWallet MnemonicWalletDetails {..}) = do
   let wk' = walletKeysFromMnemonicIndexed mnemonic (fromMaybe 0 accIx) (fromMaybe 0 addrIx)
    in pure $ case wk' of
         Left _ -> Nothing
-        Right wk -> Just
-          ( AGYExtendedPaymentSigningKey (walletKeysToExtendedPaymentSigningKey wk)
-          , AGYExtendedStakeSigningKey (walletKeysToExtendedStakeSigningKey wk)
-          , walletKeysToAddress wk nid
-          )
+        Right wk ->
+          Just
+            ( AGYExtendedPaymentSigningKey (walletKeysToExtendedPaymentSigningKey wk)
+            , AGYExtendedStakeSigningKey (walletKeysToExtendedStakeSigningKey wk)
+            , walletKeysToAddress wk nid
+            )
 signingKeysFromServerWallet nid (KeyPathWallet fp) = do
   skey <- readSomePaymentSigningKey fp
   sskey <- readSomeStakeSigningKey fp

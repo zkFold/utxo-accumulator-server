@@ -14,8 +14,8 @@ import Data.ByteString (ByteString)
 import Data.Text qualified as Text
 import GeniusYield.Imports
 import GeniusYield.Swagger.Utils (addSwaggerDescription, addSwaggerExample, dropSymbolAndCamelToSnake)
-import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
 import GeniusYield.Types (gyLogDebug, gyLogInfo)
+import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
 
 type ExceptionTypes :: [Type] -> Type
 data ExceptionTypes es where
