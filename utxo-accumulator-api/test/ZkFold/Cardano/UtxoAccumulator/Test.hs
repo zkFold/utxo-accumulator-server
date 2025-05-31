@@ -18,7 +18,8 @@ import ZkFold.Algebra.Field (toZp)
 import ZkFold.Cardano.UtxoAccumulator.Api (addUtxo, initAccumulator, removeUtxo)
 import ZkFold.Cardano.UtxoAccumulator.Api.Utils (getOutput, getState)
 import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, scriptParkingAddress, threadToken, utxoAccumulatorAddress, utxoAccumulatorScript)
-import ZkFold.Cardano.UtxoAccumulator.Sync (findUnusedTransactionData, fullSync, getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
+import ZkFold.Cardano.UtxoAccumulator.Database (getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
+import ZkFold.Cardano.UtxoAccumulator.Sync (findUnusedTransactionData, fullSync)
 import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper)
 import ZkFold.Cardano.UtxoAccumulator.Types.Context (Context (..))
 
@@ -55,10 +56,10 @@ initAccumulatorRun ctxAccumulatorScriptRef serverAddr serverPaymentKey serverSta
     submitTxBodyConfirmed_ txBody [serverPaymentKey]
     return (txSkel, context)
 
-addUtxoRun :: Context -> GYAddress -> ScalarFieldOf BLS12_381_G1_Point -> User -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
-addUtxoRun context recipient r u ctx = do
-  m <- getUtxoAccumulatorData
-  putUtxoAccumulatorData $ insert recipient r m
+addUtxoRun :: FilePath -> Context -> GYAddress -> ScalarFieldOf BLS12_381_G1_Point -> User -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
+addUtxoRun fp context recipient r u ctx = do
+  m <- getUtxoAccumulatorData fp
+  putUtxoAccumulatorData fp $ insert recipient r m
   runGYTxMonadIO
     (ctxNetworkId ctx)
     (ctxProviders ctx)
@@ -74,14 +75,15 @@ addUtxoRun context recipient r u ctx = do
       return txSkel
 
 removeUtxoRun ::
+  FilePath ->
   Context ->
   GYAddress ->
   GYPaymentSigningKey ->
   GYStakeSigningKey ->
   Ctx ->
   IO (GYTxSkeleton 'PlutusV3)
-removeUtxoRun context serverAddr serverPaymentKey serverStakeKey ctx = do
-  m <- getUtxoAccumulatorData
+removeUtxoRun fp context serverAddr serverPaymentKey serverStakeKey ctx = do
+  m <- getUtxoAccumulatorData fp
   (nId, txOut) <- runGYTxMonadIO
     (ctxNetworkId ctx)
     (ctxProviders ctx)
@@ -131,6 +133,8 @@ utxoAccumulatorTests setup =
           let accumulationValue :: GYValue
               accumulationValue = valueFromLovelace 100_000_000
 
+          let fp = "txs.json"
+
           -- writeFileJSON "utxo-accumulator-api/accumulation-group-elements.json" (accumulationGroupElements @N @M)
           -- writeFileJSON "utxo-accumulator-api/distribution-group-elements.json" (distributionGroupElements @N @M)
 
@@ -145,7 +149,7 @@ utxoAccumulatorTests setup =
             >>= info . ("Funded server. Server utxos: " <>) . show
 
           -- Initializing the accumulator
-          removeUtxoAccumulatorData
+          removeUtxoAccumulatorData fp
           (txInit, context) <- initAccumulatorRun scriptRef serverAddr serverPaymentKey serverStakeKey accumulationValue ctx
           info $ "Transaction: " <> show txInit
           ctxRunQuery ctx (utxosAtAddress serverAddr Nothing)
@@ -153,11 +157,11 @@ utxoAccumulatorTests setup =
 
           -- Adding funds to the accumulator
           let r = toZp 42
-          txAdd <- addUtxoRun context (userAddr user2) r user1 ctx
+          txAdd <- addUtxoRun fp context (userAddr user2) r user1 ctx
           info $ "Transaction: " <> show txAdd
 
           -- Removing funds from the accumulator
-          txRemove <- removeUtxoRun context serverAddr serverPaymentKey serverStakeKey ctx
+          txRemove <- removeUtxoRun fp context serverAddr serverPaymentKey serverStakeKey ctx
           info $ "Transaction: " <> show txRemove
 
           ctxRunQuery ctx (utxosAtAddress protocolTreasuryAddress Nothing)

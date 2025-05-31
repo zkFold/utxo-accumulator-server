@@ -41,12 +41,14 @@ library
     ZkFold.Cardano.UtxoAccumulator.Api
     ZkFold.Cardano.UtxoAccumulator.Api.Utils
     ZkFold.Cardano.UtxoAccumulator.Constants
+    ZkFold.Cardano.UtxoAccumulator.Database
     ZkFold.Cardano.UtxoAccumulator.Datum
     ZkFold.Cardano.UtxoAccumulator.Precompute
     ZkFold.Cardano.UtxoAccumulator.Sync
     ZkFold.Cardano.UtxoAccumulator.Transition
     ZkFold.Cardano.UtxoAccumulator.Types
     ZkFold.Cardano.UtxoAccumulator.Types.Context
+    ZkFold.Cardano.UtxoAccumulator.Types.Errors
     ZkFold.Cardano.UtxoAccumulator.Types.Monad
     ZkFold.Cardano.UtxoAccumulator.Utils
 
@@ -94,7 +96,6 @@ test-suite utxo-accumulator-api-tests
   main-is: Main.hs
   other-modules:
     ZkFold.Cardano.UtxoAccumulator.Test
-    ZkFold.Cardano.UtxoAccumulator.Test.Utils
 
   build-depends:
     atlas-cardano,
