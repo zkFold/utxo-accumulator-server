@@ -40,7 +40,7 @@ utxoAccumulatorDatumsFromElements gs =
          in UtxoAccumulatorDatum {..}
 
       prec :: UtxoAccumulatorDatum -> BuiltinByteString -> UtxoAccumulatorDatum
-      prec d g = d {nextDatumHash = utxoAccumulatorDatumHash d, maybeCurrentGroupElement = Just g}
+      prec d g = UtxoAccumulatorDatum {nextDatumHash = utxoAccumulatorDatumHash d, maybeCurrentGroupElement = Just g}
    in foldr'
         (\g acc -> prec (head acc) g : acc)
         [lastAccPar]

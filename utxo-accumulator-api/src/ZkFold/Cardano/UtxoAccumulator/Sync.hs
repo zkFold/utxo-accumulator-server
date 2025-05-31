@@ -1,43 +1,58 @@
 module ZkFold.Cardano.UtxoAccumulator.Sync where
 
 import Data.Bool (bool)
-import Data.Map (Map, elems, filterWithKey, findMin, fromList)
+import Data.Map (Map, filterWithKey, findMin, fromList, toList)
 import GeniusYield.Types
 import PlutusLedgerApi.V3 (toBuiltinData)
 import PlutusTx.Builtins (ByteOrder (..), serialiseData)
-import PlutusTx.Prelude (BuiltinByteString, blake2b_224, byteStringToInteger, indexByteString, sliceByteString)
-import System.Directory (doesFileExist)
+import PlutusTx.Prelude (blake2b_224, byteStringToInteger)
+import System.Directory (doesFileExist, removeFile)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Field (toZp)
+import ZkFold.Cardano.UPLC.UtxoAccumulator (UtxoAccumulatorRedeemer (..))
 import ZkFold.Prelude (readFileJSON, writeFileJSON)
 
-addressFromTicket :: BuiltinByteString -> (Natural, ScalarFieldOf BLS12_381_G1_Point)
-addressFromTicket bs =
-  let i0 = indexByteString bs 0
-      i1 = indexByteString bs 1
-      i = fromIntegral $ i1 * 256 + i0
-      bs' = sliceByteString 2 28 bs
-   in (i, toZp $ byteStringToInteger BigEndian bs')
+removeUtxoAccumulatorData :: IO ()
+removeUtxoAccumulatorData = do
+  removeFile "txs.json"
 
-addressList :: [BuiltinByteString] -> [ScalarFieldOf BLS12_381_G1_Point]
-addressList = elems . fromList . map addressFromTicket
-
--- TODO: Implement this
-getTickets :: Monad m => m [BuiltinByteString]
-getTickets = return []
-
-findUnusedTicket :: Map GYAddress (ScalarFieldOf BLS12_381_G1_Point) -> [ScalarFieldOf BLS12_381_G1_Point] -> Maybe (GYAddress, ScalarFieldOf BLS12_381_G1_Point)
-findUnusedTicket m as =
-  let m' = filterWithKey (\k _ -> toZp (byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData $ addressToPlutus k) `notElem` as) m
-   in bool Nothing (Just $ findMin m') (not $ null m')
-
-getTxs :: IO [(GYAddress, ScalarFieldOf BLS12_381_G1_Point)]
-getTxs = do
+getUtxoAccumulatorData :: IO (Map GYAddress (ScalarFieldOf BLS12_381_G1_Point))
+getUtxoAccumulatorData = do
   b <- doesFileExist "txs.json"
   if b
-    then readFileJSON "txs.json"
+    then fromList <$> readFileJSON "txs.json"
     else return mempty
 
-putTxs :: [(GYAddress, ScalarFieldOf BLS12_381_G1_Point)] -> IO ()
-putTxs = writeFileJSON "txs.json"
+putUtxoAccumulatorData :: Map GYAddress (ScalarFieldOf BLS12_381_G1_Point) -> IO ()
+putUtxoAccumulatorData = writeFileJSON "txs.json" . toList
+
+trySync :: GYNetworkId -> GYTxOut 'PlutusV3 -> IO (Maybe (GYTxOut 'PlutusV3, UtxoAccumulatorRedeemer))
+trySync _ _ = do
+  return Nothing
+
+fullSyncInternal :: GYNetworkId -> GYTxOut 'PlutusV3 -> IO [UtxoAccumulatorRedeemer]
+fullSyncInternal nId txOut = do
+  maybeTxOut' <- trySync nId txOut
+  case maybeTxOut' of
+    Just (txOut', redeemer) -> do
+      redeemers <- fullSyncInternal nId txOut'
+      return (redeemers ++ [redeemer])
+    Nothing -> return []
+
+fullSync :: GYNetworkId -> GYTxOut 'PlutusV3 -> IO ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point])
+fullSync nId txOut = do
+  redeemers <- fullSyncInternal nId txOut
+  return $
+    foldl
+      ( \(hs, as) redeemer -> case redeemer of
+          AddUtxo h _ -> (hs ++ [toZp h], as)
+          RemoveUtxo addr _ _ -> (hs, toZp (byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData addr) : as)
+      )
+      ([], [])
+      redeemers
+
+findUnusedTransactionData :: Map GYAddress (ScalarFieldOf BLS12_381_G1_Point) -> [ScalarFieldOf BLS12_381_G1_Point] -> Maybe (GYAddress, ScalarFieldOf BLS12_381_G1_Point)
+findUnusedTransactionData m as =
+  let m' = filterWithKey (\k _ -> toZp (byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData $ addressToPlutus k) `notElem` as) m
+   in bool Nothing (Just $ findMin m') (not $ null m')

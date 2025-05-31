@@ -7,13 +7,15 @@ import PlutusTx.Prelude (
   byteStringToInteger,
   ($),
  )
-import Prelude (snd)
+import Prelude ((++))
 
 import Data.Maybe (fromJust)
 import GeniusYield.Types (GYDatum, GYRedeemer, datumFromPlutusData, datumToPlutus, redeemerFromPlutusData)
+import ZkFold.Algebra.Class (zero, (-!))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Field (toZp)
+import ZkFold.Algebra.Number (value)
 import ZkFold.Cardano.OffChain.BLS12_381 (convertZp)
 import ZkFold.Cardano.OffChain.Plonkup (mkProof)
 import ZkFold.Cardano.OnChain.Plonkup.Data (SetupBytes)
@@ -24,6 +26,7 @@ import ZkFold.Cardano.UPLC.UtxoAccumulator (
  )
 import ZkFold.Cardano.UtxoAccumulator.Constants (M, N)
 import ZkFold.Cardano.UtxoAccumulator.Datum (addDatumFromHash, removeDatumFromHash)
+import ZkFold.Prelude (length, replicate)
 import ZkFold.Symbolic.Examples.UtxoAccumulator (
   utxoAccumulatorHash,
   utxoAccumulatorProve,
@@ -31,8 +34,8 @@ import ZkFold.Symbolic.Examples.UtxoAccumulator (
 
 utxoAccumulatorHashWrapper :: Address -> ScalarFieldOf BLS12_381_G1_Point -> ScalarFieldOf BLS12_381_G1_Point
 utxoAccumulatorHashWrapper addr r =
-  let a = byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData addr
-   in utxoAccumulatorHash (toZp a) r
+  let a = toZp $ byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData addr
+   in utxoAccumulatorHash a r
 
 mkAddUtxo ::
   GYDatum ->
@@ -61,10 +64,16 @@ mkRemoveUtxo dat hs as addr r =
   let Datum d = datumToPlutus dat
       (datumAdd, UtxoAccumulatorDatum {..}, setup) = unsafeFromBuiltinData d :: (UtxoAccumulatorDatum, UtxoAccumulatorDatum, SetupBytes)
 
-      a = byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData addr
-      proof = mkProof $ snd $ utxoAccumulatorProve @N @M hs as (toZp a) r
+      a' = byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData addr
+      a = toZp a'
+
+      n = value @N
+      hs' = hs ++ replicate (n -! length hs) zero
+      as' = as ++ replicate (n -! length as) zero
+
+      (_, proof) = utxoAccumulatorProve @N @M hs' as' a r
 
       d' = removeDatumFromHash nextDatumHash
-      setup' = updateSetupBytes setup a $ fromJust maybeCurrentGroupElement
+      setup' = updateSetupBytes setup a' $ fromJust maybeCurrentGroupElement
       dat' = datumFromPlutusData $ toBuiltinData (datumAdd, d', setup')
-   in (dat', redeemerFromPlutusData $ RemoveUtxo addr proof d')
+   in (dat', redeemerFromPlutusData $ RemoveUtxo addr (mkProof proof) d')

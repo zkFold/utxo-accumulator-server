@@ -113,3 +113,4 @@ test-suite utxo-accumulator-api-tests
     template-haskell,
     text,
     utxo-accumulator-api,
+    zkfold-cardano,

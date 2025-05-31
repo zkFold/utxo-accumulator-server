@@ -3,7 +3,8 @@ module ZkFold.Cardano.UtxoAccumulator.Test (
 ) where
 
 import Control.Monad.Reader (runReaderT)
-import Data.Map (fromList)
+import Data.Map (insert)
+import Data.Maybe (fromJust)
 import GeniusYield.Imports ((&))
 import GeniusYield.Test.Privnet.Ctx
 import GeniusYield.Test.Privnet.Setup
@@ -15,11 +16,11 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Field (toZp)
 import ZkFold.Cardano.UtxoAccumulator.Api (addUtxo, initAccumulator, removeUtxo)
-import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, scriptParkingAddress, utxoAccumulatorAddress, utxoAccumulatorScript)
-import ZkFold.Cardano.UtxoAccumulator.Types.Context (Context (..))
+import ZkFold.Cardano.UtxoAccumulator.Api.Utils (getOutput, getState)
+import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, scriptParkingAddress, threadToken, utxoAccumulatorAddress, utxoAccumulatorScript)
+import ZkFold.Cardano.UtxoAccumulator.Sync (findUnusedTransactionData, fullSync, getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
 import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper)
-import ZkFold.Cardano.UtxoAccumulator.Sync (getTickets, findUnusedTicket, addressList, getTxs, putTxs)
-import Data.Maybe (fromJust)
+import ZkFold.Cardano.UtxoAccumulator.Types.Context (Context (..))
 
 fundingRun :: User -> GYAddress -> GYValue -> GYValue -> Ctx -> IO GYTxOutRef
 fundingRun treasury serverAddr serverFunds v ctx = ctxRun ctx treasury $ do
@@ -56,8 +57,8 @@ initAccumulatorRun ctxAccumulatorScriptRef serverAddr serverPaymentKey serverSta
 
 addUtxoRun :: Context -> GYAddress -> ScalarFieldOf BLS12_381_G1_Point -> User -> Ctx -> IO (GYTxSkeleton 'PlutusV3)
 addUtxoRun context recipient r u ctx = do
-  m <- getTxs
-  putTxs $ (recipient, r) : m
+  m <- getUtxoAccumulatorData
+  putUtxoAccumulatorData $ insert recipient r m
   runGYTxMonadIO
     (ctxNetworkId ctx)
     (ctxProviders ctx)
@@ -80,10 +81,22 @@ removeUtxoRun ::
   Ctx ->
   IO (GYTxSkeleton 'PlutusV3)
 removeUtxoRun context serverAddr serverPaymentKey serverStakeKey ctx = do
-  m <- getTxs
-  as <- addressList <$> getTickets
-  let hs = map (\(a, x) -> utxoAccumulatorHashWrapper (addressToPlutus a) x) m
-      (recipient, r) = fromJust $ findUnusedTicket (fromList m) as
+  m <- getUtxoAccumulatorData
+  (nId, txOut) <- runGYTxMonadIO
+    (ctxNetworkId ctx)
+    (ctxProviders ctx)
+    (AGYPaymentSigningKey serverPaymentKey)
+    (Just $ AGYStakeSigningKey serverStakeKey)
+    [serverAddr]
+    serverAddr
+    Nothing
+    $ do
+      nId <- networkId
+      stateRef <- fromJust <$> getState (threadToken $ ctxThreadTokenRef context)
+      (nId,) . fromJust <$> getOutput stateRef
+  (_, as) <- fullSync nId txOut
+  let (recipient, r) = fromJust $ findUnusedTransactionData m as
+      hs = [utxoAccumulatorHashWrapper (addressToPlutus recipient) r]
   runGYTxMonadIO
     (ctxNetworkId ctx)
     (ctxProviders ctx)
@@ -132,6 +145,7 @@ utxoAccumulatorTests setup =
             >>= info . ("Funded server. Server utxos: " <>) . show
 
           -- Initializing the accumulator
+          removeUtxoAccumulatorData
           (txInit, context) <- initAccumulatorRun scriptRef serverAddr serverPaymentKey serverStakeKey accumulationValue ctx
           info $ "Transaction: " <> show txInit
           ctxRunQuery ctx (utxosAtAddress serverAddr Nothing)
