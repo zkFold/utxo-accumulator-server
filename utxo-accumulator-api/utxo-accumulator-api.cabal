@@ -72,7 +72,7 @@ library
     mime-mail,
     mtl,
     plutus-ledger-api,
-    plutus-tx,    
+    plutus-tx,
     smtp-mail,
     sqlite-simple,
     swagger2,
