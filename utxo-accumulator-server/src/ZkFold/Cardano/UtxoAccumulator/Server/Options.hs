@@ -1,44 +1,40 @@
 module ZkFold.Cardano.UtxoAccumulator.Server.Options (
-  Command (..),
-  ServeCommand (..),
   parseCommand,
-  parseServeCommand,
   runCommand,
-  runServeCommand,
 ) where
 
 import Options.Applicative
-import ZkFold.Cardano.UtxoAccumulator.Server.Run (runServer)
+import ZkFold.Cardano.UtxoAccumulator.Server.Run (Mode (..), runServer)
 
-newtype Command = Serve ServeCommand
+data Command = Accumulate (Maybe FilePath) | Distribute (Maybe FilePath)
 
-newtype ServeCommand = ServeCommand (Maybe FilePath)
+parseCommandOptions :: Parser (Maybe FilePath)
+parseCommandOptions =
+  optional
+    ( strOption
+        ( long "config"
+            <> metavar "CONFIG"
+            <> short 'c'
+            <> help "Path of optional configuration file. If not provided, \"SERVER_CONFIG\" environment variable is used."
+        )
+    )
 
 parseCommand :: Parser Command
 parseCommand =
   subparser $
     mconcat
       [ command
-          "serve"
-          ( info (Serve <$> parseServeCommand <**> helper) $
+          "accumulate"
+          ( info (Accumulate <$> parseCommandOptions <**> helper) $
               progDesc "Serve endpoints"
+          )
+      , command
+          "distribute"
+          ( info (Distribute <$> parseCommandOptions <**> helper) $
+              progDesc "Distribute endpoints"
           )
       ]
 
-parseServeCommand :: Parser ServeCommand
-parseServeCommand =
-  ServeCommand
-    <$> optional
-      ( strOption
-          ( long "config"
-              <> metavar "CONFIG"
-              <> short 'c'
-              <> help "Path of optional configuration file. If not provided, \"SERVER_CONFIG\" environment variable is used."
-          )
-      )
-
 runCommand :: Command -> IO ()
-runCommand (Serve serveCommand) = runServeCommand serveCommand
-
-runServeCommand :: ServeCommand -> IO ()
-runServeCommand (ServeCommand mcfp) = runServer mcfp
+runCommand (Accumulate mcfp) = runServer mcfp ModeAccumulate
+runCommand (Distribute mcfp) = runServer mcfp ModeDistribute

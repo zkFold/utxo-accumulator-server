@@ -1,11 +1,12 @@
 module ZkFold.Cardano.UtxoAccumulator.Server.Run (
   runServer,
+  Mode (..),
 ) where
 
 import Control.Exception (Exception (..), SomeException, try)
 import Control.Monad.Except (ExceptT (..))
 import Data.ByteString qualified as B
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isNothing)
 import Data.Text.Lazy qualified as LT
 import Data.Version (showVersion)
 import Data.Yaml.Pretty qualified as Yaml
@@ -27,10 +28,14 @@ import ZkFold.Cardano.UtxoAccumulator.Server.Config (ServerConfig (..), coreConf
 import ZkFold.Cardano.UtxoAccumulator.Server.ErrorMiddleware
 import ZkFold.Cardano.UtxoAccumulator.Server.RequestLoggerMiddleware (gcpReqLogger)
 import ZkFold.Cardano.UtxoAccumulator.Server.Utils
+import ZkFold.Cardano.UtxoAccumulator.TxBuilder (initAccumulatorRun, postScriptRun, removeUtxoRun)
 import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
 
-runServer :: Maybe FilePath -> IO ()
-runServer mfp = do
+data Mode = ModeAccumulate | ModeDistribute
+  deriving (Eq, Show)
+
+runServer :: Maybe FilePath -> Mode -> IO ()
+runServer mfp mode = do
   sc@ServerConfig {..} <- serverConfigOptionalFPIO mfp
   (serverPaymentKey, serverStakeKey, serverAddr) <- fromJust <$> signingKeysFromServerWallet scNetworkId scWallet
   let coreCfg = coreConfigFromServerConfig sc
@@ -75,20 +80,35 @@ runServer mfp = do
           , cfgMaybeThreadTokenRef = scMaybeThreadTokenRef
           }
 
-    logInfoS $
-      "Starting UTxO Accumulator server on port "
-        +| scPort
-        |+ "\nCore config:\n"
-        +| indentF 4 (fromString $ show coreCfg)
-        |+ ""
-    Warp.runSettings settings
-      . reqLoggerMiddleware
-      . errLoggerMiddleware
-      . errorJsonWrapMiddleware
-      $ let context = apiKeyAuthHandler (case scServerApiKey of Confidential t -> apiKeyFromText t) :. EmptyContext
-         in serveWithContext mainAPI context
-              $ hoistServerWithContext
-                mainAPI
-                (Proxy :: Proxy '[AuthHandler Wai.Request ()])
-                (\ioAct -> Handler . ExceptT $ first (apiErrorToServerError . exceptionHandler) <$> try ioAct)
-              $ mainServer cfg
+    -- Checking if the script is posted
+    cfg' <-
+      if isNothing scMaybeScriptRef
+        then do
+          logInfoS "Posting the UTxO Accumulator script..."
+          postScriptRun cfg
+        else return cfg
+
+    -- Checking if the accumulator is initialized
+    cfg'' <-
+      if isNothing scMaybeThreadTokenRef
+        then do
+          logInfoS "Initializing the UTxO Accumulator..."
+          initAccumulatorRun cfg'
+        else return cfg'
+
+    case mode of
+      ModeAccumulate -> do
+        logInfoS $ "Starting UTxO Accumulator server on port " +| scPort |+ "\nCore config:\n" +| indentF 4 (fromString $ show coreCfg) |+ ""
+        Warp.runSettings settings
+          . reqLoggerMiddleware
+          . errLoggerMiddleware
+          . errorJsonWrapMiddleware
+          $ let context = apiKeyAuthHandler (case scServerApiKey of Confidential t -> apiKeyFromText t) :. EmptyContext
+             in serveWithContext mainAPI context
+                  $ hoistServerWithContext
+                    mainAPI
+                    (Proxy :: Proxy '[AuthHandler Wai.Request ()])
+                    (\ioAct -> Handler . ExceptT $ first (apiErrorToServerError . exceptionHandler) <$> try ioAct)
+                  $ mainServer cfg''
+      ModeDistribute ->
+        removeUtxoRun cfg''

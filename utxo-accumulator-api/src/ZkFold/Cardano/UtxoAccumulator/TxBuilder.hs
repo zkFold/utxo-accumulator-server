@@ -1,5 +1,6 @@
 module ZkFold.Cardano.UtxoAccumulator.TxBuilder where
 
+import Control.Monad (unless)
 import Data.Map (insert)
 import Data.Maybe (fromJust)
 import GeniusYield.TxBuilder
@@ -84,16 +85,20 @@ removeUtxoRun :: Config -> IO ()
 removeUtxoRun cfg@Config {..} = do
   -- Get the UTXO accumulator data
   m <- getUtxoAccumulatorData cfgDatabasePath
-  (nId, txOut) <- runQueryWithConfig cfg $ do
-    nId <- networkId
-    stateRef <- fromJust <$> getState (threadToken $ fromJust cfgMaybeThreadTokenRef)
-    (nId,) . fromJust <$> getOutput stateRef
-  (_, as) <- fullSync nId txOut
-  let (recipient, r) = fromJust $ findUnusedTransactionData m as
-      hs = [utxoAccumulatorHashWrapper (addressToPlutus recipient) r]
+  unless (null m) $ do
+    (nId, txOut) <- runQueryWithConfig cfg $ do
+      nId <- networkId
+      stateRef <- fromJust <$> getState (threadToken $ fromJust cfgMaybeThreadTokenRef)
+      (nId,) . fromJust <$> getOutput stateRef
+    (_, as) <- fullSync nId txOut
+    let (recipient, r) = fromJust $ findUnusedTransactionData m as
+        hs = [utxoAccumulatorHashWrapper (addressToPlutus recipient) r]
 
-  -- Build, sign, and submit the transaction
-  runSignerWithConfig cfg $ do
-    txSkel <- removeUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress hs as recipient r
-    txBody <- buildTxBody txSkel
-    submitTxBodyConfirmed_ txBody [cfgPaymentKey]
+    -- Build, sign, and submit the transaction
+    runSignerWithConfig cfg $ do
+      txSkel <- removeUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress hs as recipient r
+      txBody <- buildTxBody txSkel
+      submitTxBodyConfirmed_ txBody [cfgPaymentKey]
+
+    -- Repeat until all UTXOs are removed
+    removeUtxoRun cfg
