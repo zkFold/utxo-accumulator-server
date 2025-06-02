@@ -18,7 +18,7 @@ tests: true
 source-repository-package
   type: git
   location: https://github.com/zkFold/zkfold-cardano
-  tag: fd67be804f26970efe7c6f17aab4a68ba3587ca1
+  tag: 9fa0f5410a8f08d0ebad680b23867bd459c32903
   subdir:
     zkfold-cardano
     zkfold-cardano-scripts
@@ -27,7 +27,7 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/zkFold/symbolic.git
-  tag: 921c32106211fce2e13f1a0633239c9dd97f3737 
+  tag: e90cca43b2662576080defa1d14cffd50e6a5c23 
   subdir: 
     symbolic-base
     symbolic-cardano
