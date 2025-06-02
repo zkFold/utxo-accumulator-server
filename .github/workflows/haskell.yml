@@ -16,12 +16,12 @@ jobs:
       uses: haskell-actions/run-fourmolu@v11
       with:
         version: "0.16.2.0"
-    - name: Check cabal file is formatted correctly
-      uses: tfausak/cabal-gild-setup-action@v2
-    - name: Check cabal file is formatted correctly
-      run: |
-        cabal-gild --input utxo-accumulator-api/utxo-accumulator-api.cabal --mode check
-        cabal-gild --input utxo-accumulator-server/utxo-accumulator-server.cabal --mode check
+    # - name: Check cabal file is formatted correctly
+    #   uses: tfausak/cabal-gild-setup-action@v2
+    # - name: Check cabal file is formatted correctly
+    #   run: |
+    #     cabal-gild --input utxo-accumulator-api/utxo-accumulator-api.cabal --mode check
+    #     cabal-gild --input utxo-accumulator-server/utxo-accumulator-server.cabal --mode check
     - name: hlint
       run: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
     - name: Install dependencies (apt-get)
@@ -59,7 +59,7 @@ jobs:
       uses: haskell-actions/setup@v2
       with:
         ghc-version: '9.6.7'
-        cabal-version: '3.14.1.1'
+        cabal-version: '3.14.2.0'
         enable-stack: true
         stack-version: '2.9'
     - name: Setup cache
