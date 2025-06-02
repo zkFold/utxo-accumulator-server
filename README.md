@@ -14,8 +14,8 @@ This repository houses off-chain code and server endpoints to interact with [zkF
 
 ## Structure of repository
 
-- [`utxo-accumulator-api`](./utxo-accumulator-api/) provides off-chain code to interact with the wallet.
-- [`utxo-accumulator-server`](./utxo-accumulator-server/) serves endpoints using our off-chain code to easily interact with the wallet.
+- [`utxo-accumulator-api`](./utxo-accumulator-api/) provides off-chain to UTxO Accumulator transactions.
+- [`utxo-accumulator-server`](./utxo-accumulator-server/) contains the server that can accumulate and distribute funds.
 
 ## API server
 

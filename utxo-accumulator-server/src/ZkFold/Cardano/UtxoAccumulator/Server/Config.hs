@@ -58,7 +58,7 @@ data ServerConfig = ServerConfig
   , scPort :: !Port
   , scServerApiKey :: !(Confidential Text)
   , scWallet :: !ServerWallet
-  , scAccumulationValue :: !GYValue
+  , scAccumulationValue :: !Integer
   , scMaybeScriptRef :: !(Maybe GYTxOutRef)
   , scMaybeThreadTokenRef :: !(Maybe GYTxOutRef)
   }
