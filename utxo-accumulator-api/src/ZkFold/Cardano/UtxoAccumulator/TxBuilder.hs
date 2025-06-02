@@ -12,7 +12,7 @@ import ZkFold.Cardano.UtxoAccumulator.Database (getUtxoAccumulatorData, putUtxoA
 import ZkFold.Cardano.UtxoAccumulator.Sync (findUnusedTransactionData, fullSync)
 import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper)
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (addUtxo, initAccumulator, postScript, removeUtxo)
-import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils (getOutput, getState)
+import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils (getState)
 import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
 
 runQueryWithConfig :: Config -> GYTxQueryMonadIO a -> IO a
@@ -86,11 +86,8 @@ removeUtxoRun cfg@Config {..} = do
   -- Get the UTXO accumulator data
   m <- getUtxoAccumulatorData cfgDatabasePath
   unless (null m) $ do
-    (nId, txOut) <- runQueryWithConfig cfg $ do
-      nId <- networkId
-      stateRef <- fromJust <$> getState (threadToken $ fromJust cfgMaybeThreadTokenRef)
-      (nId,) . fromJust <$> getOutput stateRef
-    (_, as) <- fullSync nId txOut
+    stateRef <- runQueryWithConfig cfg $ fromJust <$> getState (threadToken $ fromJust cfgMaybeThreadTokenRef)
+    (_, as) <- fullSync cfg stateRef
     let (recipient, r) = fromJust $ findUnusedTransactionData m as
         hs = [utxoAccumulatorHashWrapper (addressToPlutus recipient) r]
 

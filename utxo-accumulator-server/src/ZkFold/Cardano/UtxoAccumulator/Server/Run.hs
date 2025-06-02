@@ -71,6 +71,7 @@ runServer mfp mode = do
         Config
           { cfgNetworkId = scNetworkId
           , cfgProviders = providers
+          , cfgMaestroToken = show $ cpiMaestroToken scCoreProvider
           , cfgPaymentKey = serverPaymentKey
           , cfgStakeKey = Just serverStakeKey
           , cfgAddress = serverAddr

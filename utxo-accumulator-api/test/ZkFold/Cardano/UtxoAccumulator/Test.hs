@@ -42,6 +42,7 @@ utxoAccumulatorTests setup =
                 Config
                   { cfgNetworkId = nid
                   , cfgProviders = ctxProviders ctx
+                  , cfgMaestroToken = ""
                   , cfgPaymentKey = AGYPaymentSigningKey serverPaymentKey
                   , cfgStakeKey = Just $ AGYStakeSigningKey serverStakeKey
                   , cfgAddress = serverAddr
