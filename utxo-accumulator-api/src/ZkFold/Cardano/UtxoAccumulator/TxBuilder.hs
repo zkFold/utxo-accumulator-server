@@ -1,7 +1,7 @@
 module ZkFold.Cardano.UtxoAccumulator.TxBuilder where
 
 import Control.Monad (unless)
-import Data.Map (insert, delete)
+import Data.Map (delete, insert)
 import Data.Maybe (fromJust)
 import GeniusYield.TxBuilder
 import GeniusYield.Types
@@ -102,6 +102,6 @@ removeUtxoRun cfg@Config {..} = do
 
     -- Update the database by removing the UTXO
     putUtxoAccumulatorData cfgDatabasePath $ delete recipient m
-    
+
     -- Repeat until all UTXOs are removed
     removeUtxoRun cfg
