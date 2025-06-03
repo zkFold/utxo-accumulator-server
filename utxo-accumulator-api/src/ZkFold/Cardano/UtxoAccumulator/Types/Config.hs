@@ -15,4 +15,3 @@ data Config = Config
   , cfgMaybeScriptRef :: Maybe GYTxOutRef
   , cfgMaybeThreadTokenRef :: Maybe GYTxOutRef
   }
-  

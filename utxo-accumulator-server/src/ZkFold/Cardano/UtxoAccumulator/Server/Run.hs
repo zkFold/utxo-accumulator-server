@@ -7,6 +7,7 @@ import Control.Exception (Exception (..), SomeException, try)
 import Control.Monad.Except (ExceptT (..))
 import Data.ByteString qualified as B
 import Data.Maybe (fromJust, isNothing)
+import Data.Text qualified as T
 import Data.Text.Lazy qualified as LT
 import Data.Version (showVersion)
 import Data.Yaml.Pretty qualified as Yaml
@@ -17,6 +18,7 @@ import GeniusYield.Imports
 import GeniusYield.Types
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
+import Network.Wai.Middleware.Cors (CorsResourcePolicy (..), cors, simpleCorsResourcePolicy)
 import PackageInfo_utxo_accumulator_server qualified as PackageInfo
 import Servant
 import Servant.Server.Experimental.Auth (AuthHandler)
@@ -42,7 +44,8 @@ runServer mfp mode = do
   withCfgProviders coreCfg "server" $ \providers -> do
     let logInfoS = gyLogInfo providers mempty
         logErrorS = gyLogError providers mempty
-    logInfoS $ "UTxO Accumulator server version: " +| showVersion PackageInfo.version ||+ "\nDatabase file: " +|| scDatabasePath ||+ ""
+    logInfoS $ "UTxO Accumulator server version: " ++ showVersion PackageInfo.version
+    logInfoS $ "Database file: " ++ scDatabasePath
     B.writeFile "web/openapi/api.yaml" (Yaml.encodePretty Yaml.defConfig utxoAccumulatorAPIOpenApi)
     reqLoggerMiddleware <- gcpReqLogger
     let
@@ -71,7 +74,7 @@ runServer mfp mode = do
         Config
           { cfgNetworkId = scNetworkId
           , cfgProviders = providers
-          , cfgMaestroToken = show $ cpiMaestroToken scCoreProvider
+          , cfgMaestroToken = let Confidential t = cpiMaestroToken scCoreProvider in T.unpack t
           , cfgPaymentKey = serverPaymentKey
           , cfgStakeKey = Just serverStakeKey
           , cfgAddress = serverAddr
@@ -89,6 +92,8 @@ runServer mfp mode = do
           postScriptRun cfg
         else return cfg
 
+    B.writeFile "maybeScriptRef.yaml" (Yaml.encodePretty Yaml.defConfig $ cfgMaybeScriptRef cfg')
+
     -- Checking if the accumulator is initialized
     cfg'' <-
       if isNothing scMaybeThreadTokenRef
@@ -97,10 +102,19 @@ runServer mfp mode = do
           initAccumulatorRun cfg'
         else return cfg'
 
+    B.writeFile "maybeThreadTokenRef.yaml" (Yaml.encodePretty Yaml.defConfig $ cfgMaybeThreadTokenRef cfg'')
+
     case mode of
       ModeAccumulate -> do
         logInfoS $ "Starting UTxO Accumulator server on port " +| scPort |+ "\nCore config:\n" +| indentF 4 (fromString $ show coreCfg) |+ ""
+        let corsPolicy =
+              simpleCorsResourcePolicy
+                { corsRequestHeaders = ["content-type", "api-key"]
+                , corsMethods = ["GET", "POST", "OPTIONS"]
+                , corsOrigins = Nothing
+                }
         Warp.runSettings settings
+          . cors (const $ Just corsPolicy)
           . reqLoggerMiddleware
           . errLoggerMiddleware
           . errorJsonWrapMiddleware

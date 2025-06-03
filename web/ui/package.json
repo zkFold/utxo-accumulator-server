@@ -1,0 +1,22 @@
+{
+  "name": "ui",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "description": "",
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^4.5.14",
+    "vite-plugin-wasm": "^3.4.1"
+  },
+  "dependencies": {
+    "@emurgo/cardano-serialization-lib-browser": "^14.1.2"
+  }
+}

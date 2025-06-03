@@ -87,7 +87,7 @@ This repository houses off-chain code and server endpoints to interact with [zkF
         # Payment address index.
         addrIx: 0
     ```
-3. Run the server with command `cabal run utxo-accumulator-server -- serve -c my-config.yaml`.
+3. Run the server with command `cabal run utxo-accumulator-server -- accumulate -c config.yaml`.
 
    Call: `cabal run utxo-accumulator-server -- -h` for help. 😉
 

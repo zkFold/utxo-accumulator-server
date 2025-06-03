@@ -87,13 +87,17 @@ removeUtxoRun cfg@Config {..} = do
   m <- getUtxoAccumulatorData cfgDatabasePath
   unless (null m) $ do
     stateRef <- runQueryWithConfig cfg $ fromJust <$> getState (threadToken $ fromJust cfgMaybeThreadTokenRef)
-    (_, as) <- fullSync cfg stateRef
+    (hs, as) <- fullSync cfg stateRef
     let (recipient, r) = fromJust $ findUnusedTransactionData m as
-        hs = [utxoAccumulatorHashWrapper (addressToPlutus recipient) r]
+        
+        (hs', as') = case cfgMaestroToken of
+          -- This one is for testing purposes
+          "" -> ([utxoAccumulatorHashWrapper (addressToPlutus recipient) r], [])
+          _  -> (hs, as)
 
     -- Build, sign, and submit the transaction
     runSignerWithConfig cfg $ do
-      txSkel <- removeUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress hs as recipient r
+      txSkel <- removeUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress hs' as' recipient r
       txBody <- buildTxBody txSkel
       submitTxBodyConfirmed_ txBody [cfgPaymentKey]
 

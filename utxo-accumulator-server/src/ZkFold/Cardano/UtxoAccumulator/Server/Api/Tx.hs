@@ -20,8 +20,8 @@ type TransactionPrefix :: Symbol
 type TransactionPrefix = "transaction"
 
 data Transaction = Transaction
-  { txSender :: !GYAddress
-  , txRecipient :: !GYAddress
+  { txSender :: !GYAddressBech32
+  , txRecipient :: !GYAddressBech32
   , txNonce :: !Natural
   }
   deriving stock (Show, Eq, Generic)
@@ -34,7 +34,7 @@ instance Swagger.ToSchema Transaction where
     Swagger.genericDeclareNamedSchema Swagger.defaultSchemaOptions {Swagger.fieldLabelModifier = dropSymbolAndCamelToSnake @TransactionPrefix}
       & addSwaggerDescription "UTxO Accumulator transaction."
 
-type TransactionAPI = Summary "Transaction" :> Description "Build a UTxO Accumulator transaction." :> ReqBody '[JSON] Transaction :> Get '[JSON] GYTx
+type TransactionAPI = Summary "Transaction" :> Description "Build a UTxO Accumulator transaction." :> ReqBody '[JSON] Transaction :> Post '[JSON] GYTx
 
 handleTransaction ::
   Config ->
@@ -42,4 +42,4 @@ handleTransaction ::
   IO GYTx
 handleTransaction cfg Transaction {..} = do
   logInfo cfg "Transaction API requested."
-  addUtxoRun cfg txSender txRecipient $ fromConstant txNonce
+  addUtxoRun cfg (addressFromBech32 txSender) (addressFromBech32 txRecipient) $ fromConstant txNonce
