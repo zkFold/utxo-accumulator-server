@@ -89,11 +89,11 @@ removeUtxoRun cfg@Config {..} = do
     stateRef <- runQueryWithConfig cfg $ fromJust <$> getState (threadToken $ fromJust cfgMaybeThreadTokenRef)
     (hs, as) <- fullSync cfg stateRef
     let (recipient, r) = fromJust $ findUnusedTransactionData m as
-        
+
         (hs', as') = case cfgMaestroToken of
           -- This one is for testing purposes
           "" -> ([utxoAccumulatorHashWrapper (addressToPlutus recipient) r], [])
-          _  -> (hs, as)
+          _ -> (hs, as)
 
     -- Build, sign, and submit the transaction
     runSignerWithConfig cfg $ do
