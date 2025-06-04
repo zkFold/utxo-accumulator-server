@@ -95,7 +95,7 @@ utxoAccumulatorTests setup =
             >>= info . ("Added a utxo to accumulator. Server's utxos: " <>) . show
 
           -- Removing funds from the accumulator
-          removeUtxoRun cfg''
+          removeUtxoRun cfg'' True
           ctxRunQuery ctx (utxosAtAddress serverAddr Nothing)
             >>= info . ("Removed a utxo from accumulator. Server's utxos: " <>) . show
 

@@ -6,7 +6,7 @@ module ZkFold.Cardano.UtxoAccumulator.Server.Options (
 import Options.Applicative
 import ZkFold.Cardano.UtxoAccumulator.Server.Run (Mode (..), runServer)
 
-data Command = Accumulate (Maybe FilePath) | Distribute (Maybe FilePath)
+data Command = Accumulate (Maybe FilePath) | Distribute (Maybe FilePath) Bool
 
 parseCommandOptions :: Parser (Maybe FilePath)
 parseCommandOptions =
@@ -19,6 +19,15 @@ parseCommandOptions =
         )
     )
 
+parseDistributeOptions :: Parser (Maybe FilePath, Bool)
+parseDistributeOptions =
+  (,)
+    <$> parseCommandOptions
+    <*> switch
+      ( long "remove-no-date"
+      <> help "If set, distribute (remove) UTxOs with no removal date. Default: do not remove UTxOs with no date."
+      )
+
 parseCommand :: Parser Command
 parseCommand =
   subparser $
@@ -30,11 +39,11 @@ parseCommand =
           )
       , command
           "distribute"
-          ( info (Distribute <$> parseCommandOptions <**> helper) $
+          ( info (uncurry Distribute <$> parseDistributeOptions <**> helper) $
               progDesc "Distribute endpoints"
           )
       ]
 
 runCommand :: Command -> IO ()
 runCommand (Accumulate mcfp) = runServer mcfp ModeAccumulate
-runCommand (Distribute mcfp) = runServer mcfp ModeDistribute
+runCommand (Distribute mcfp removeNoDate) = runServer mcfp (ModeDistribute removeNoDate)

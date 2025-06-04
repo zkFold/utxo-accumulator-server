@@ -87,8 +87,8 @@ addUtxoRun cfg@Config {..} sender recipient r distTime = do
     txSkel <- addUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) recipient r
     unsignedTx <$> buildTxBody txSkel
 
-removeUtxoRun :: Config -> IO ()
-removeUtxoRun cfg@Config {..} = do
+removeUtxoRun :: Config -> Bool -> IO ()
+removeUtxoRun cfg@Config {..} removeNoDate = do
   -- Get the UTXO accumulator data
   m <- getUtxoAccumulatorData cfgDatabasePath
   unless (null m) $ do
@@ -96,11 +96,11 @@ removeUtxoRun cfg@Config {..} = do
     (hs, as) <- fullSync cfg stateRef
     now <- getPOSIXTime
 
-    -- Find UTxOs eligible for removal (distribution time <= now or Nothing)
+    -- Find UTxOs eligible for removal
     let eligible =
           [ (recipient, nonce)
           | (recipient, AccumulatorDataItem nonce mDistTime) <- toList m
-          , maybe True (<= now) mDistTime
+          , maybe removeNoDate (<= now) mDistTime
           , toZp (byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData $ addressToPlutus recipient) `notElem` as
           ]
     case eligible of
@@ -119,5 +119,5 @@ removeUtxoRun cfg@Config {..} = do
         -- Update the database by removing the UTXO
         putUtxoAccumulatorData cfgDatabasePath $ delete recipient m
 
-        -- Repeat until all eligible UTXOs are removed
-        removeUtxoRun cfg
+        -- Repeat until all eligible UTxOs are removed
+        removeUtxoRun cfg removeNoDate

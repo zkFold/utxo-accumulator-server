@@ -33,7 +33,11 @@ components:
         type: integer
       maxItems: 3
       minItems: 3
-      type: array
+      properties:
+        ion_time:
+          multipleOf: 1.0e-12
+          type: number
+      type: object
   securitySchemes:
     api-key:
       description: API key for accessing the server's API.

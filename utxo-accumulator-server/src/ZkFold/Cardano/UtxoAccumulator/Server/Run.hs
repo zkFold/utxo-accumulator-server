@@ -33,7 +33,7 @@ import ZkFold.Cardano.UtxoAccumulator.Server.Utils
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder (initAccumulatorRun, postScriptRun, removeUtxoRun)
 import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
 
-data Mode = ModeAccumulate | ModeDistribute
+data Mode = ModeAccumulate | ModeDistribute Bool
   deriving (Eq, Show)
 
 runServer :: Maybe FilePath -> Mode -> IO ()
@@ -125,5 +125,5 @@ runServer mfp mode = do
                     (Proxy :: Proxy '[AuthHandler Wai.Request ()])
                     (\ioAct -> Handler . ExceptT $ first (apiErrorToServerError . exceptionHandler) <$> try ioAct)
                   $ mainServer cfg''
-      ModeDistribute ->
-        removeUtxoRun cfg''
+      ModeDistribute removeNoDate ->
+        removeUtxoRun cfg'' removeNoDate
