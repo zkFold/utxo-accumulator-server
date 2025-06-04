@@ -72,6 +72,7 @@ library
     symbolic-base,
     symbolic-examples,
     text,
+    time,
     vector,
     zkfold-cardano,
     zkfold-cardano-scripts,

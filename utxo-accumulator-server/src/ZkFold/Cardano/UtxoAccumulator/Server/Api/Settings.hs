@@ -24,6 +24,7 @@ type SettingsPrefix = "settings"
 data Settings = Settings
   { settingsNetwork :: !String
   , settingsVersion :: !String
+  , settingsAccumulationValue :: !String
   }
   deriving stock (Show, Eq, Generic)
   deriving
@@ -44,6 +45,7 @@ handleSettings cfg@Config {..} = do
     Settings
       { settingsNetwork = cfgNetworkId & customShowNetworkId
       , settingsVersion = showVersion PackageInfo.version
+      , settingsAccumulationValue = show cfgAccumulationValue
       }
 
 -- >>> customShowNetworkId GYMainnet

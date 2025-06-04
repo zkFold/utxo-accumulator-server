@@ -79,7 +79,8 @@ utxoAccumulatorTests setup =
           let sender = userAddr user1
               recipient = userAddr user2
               r = toZp 42
-          tx <- addUtxoRun cfg'' sender recipient r
+          -- Default: no scheduled removal
+          tx <- addUtxoRun cfg'' sender recipient r Nothing
 
           -- User signs and submits the transaction
           runSignerWithConfig

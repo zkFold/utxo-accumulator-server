@@ -1,15 +1,19 @@
 module ZkFold.Cardano.UtxoAccumulator.TxBuilder where
 
 import Control.Monad (unless)
-import Data.Map (delete, insert)
+import Data.Map (delete, insert, toList)
 import Data.Maybe (fromJust)
+import Data.Time.Clock.POSIX (getPOSIXTime)
 import GeniusYield.TxBuilder
 import GeniusYield.Types
+import PlutusLedgerApi.V3 (toBuiltinData)
+import PlutusTx.Builtins (ByteOrder (..), blake2b_224, byteStringToInteger, serialiseData)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
+import ZkFold.Algebra.Field (toZp)
 import ZkFold.Cardano.UtxoAccumulator.Constants (threadToken)
-import ZkFold.Cardano.UtxoAccumulator.Database (getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
-import ZkFold.Cardano.UtxoAccumulator.Sync (findUnusedTransactionData, fullSync)
+import ZkFold.Cardano.UtxoAccumulator.Database (AccumulatorDataItem (..), UtxoDistributionTime, getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
+import ZkFold.Cardano.UtxoAccumulator.Sync (fullSync)
 import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper)
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (addUtxo, initAccumulator, postScript, removeUtxo)
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils (getState)
@@ -70,11 +74,13 @@ addUtxoRun ::
   GYAddress ->
   GYAddress ->
   ScalarFieldOf BLS12_381_G1_Point ->
+  UtxoDistributionTime ->
   IO GYTx
-addUtxoRun cfg@Config {..} sender recipient r = do
+addUtxoRun cfg@Config {..} sender recipient r distTime = do
   -- Update the UTXO accumulator data
   m <- getUtxoAccumulatorData cfgDatabasePath
-  putUtxoAccumulatorData cfgDatabasePath $ insert recipient r m
+  let item = AccumulatorDataItem r distTime
+  putUtxoAccumulatorData cfgDatabasePath $ insert recipient item m
 
   -- Build the transaction skeleton
   runBuilderWithConfig cfg sender $ do
@@ -88,21 +94,30 @@ removeUtxoRun cfg@Config {..} = do
   unless (null m) $ do
     stateRef <- runQueryWithConfig cfg $ fromJust <$> getState (threadToken $ fromJust cfgMaybeThreadTokenRef)
     (hs, as) <- fullSync cfg stateRef
-    let (recipient, r) = fromJust $ findUnusedTransactionData m as
+    now <- getPOSIXTime
 
-        (hs', as') = case cfgMaestroToken of
-          -- This one is for testing purposes
-          "" -> ([utxoAccumulatorHashWrapper (addressToPlutus recipient) r], [])
-          _ -> (hs, as)
+    -- Find UTxOs eligible for removal (distribution time <= now or Nothing)
+    let eligible =
+          [ (recipient, nonce)
+          | (recipient, AccumulatorDataItem nonce mDistTime) <- toList m
+          , maybe True (<= now) mDistTime
+          , toZp (byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData $ addressToPlutus recipient) `notElem` as
+          ]
+    case eligible of
+      [] -> return () -- No eligible UTxOs to remove at this time
+      ((recipient, nonce) : _) -> do
+        let (hs', as') = case cfgMaestroToken of
+              "" -> ([utxoAccumulatorHashWrapper (addressToPlutus recipient) nonce], [])
+              _ -> (hs, as)
 
-    -- Build, sign, and submit the transaction
-    runSignerWithConfig cfg $ do
-      txSkel <- removeUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress hs' as' recipient r
-      txBody <- buildTxBody txSkel
-      submitTxBodyConfirmed_ txBody [cfgPaymentKey]
+        -- Build, sign, and submit the transaction
+        runSignerWithConfig cfg $ do
+          txSkel <- removeUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress hs' as' recipient nonce
+          txBody <- buildTxBody txSkel
+          submitTxBodyConfirmed_ txBody [cfgPaymentKey]
 
-    -- Update the database by removing the UTXO
-    putUtxoAccumulatorData cfgDatabasePath $ delete recipient m
+        -- Update the database by removing the UTXO
+        putUtxoAccumulatorData cfgDatabasePath $ delete recipient m
 
-    -- Repeat until all UTXOs are removed
-    removeUtxoRun cfg
+        -- Repeat until all eligible UTXOs are removed
+        removeUtxoRun cfg

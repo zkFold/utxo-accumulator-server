@@ -4,6 +4,7 @@ module ZkFold.Cardano.UtxoAccumulator.Server.Api.Tx (
 ) where
 
 import Data.Swagger qualified as Swagger
+import Data.Time.Clock.POSIX (POSIXTime)
 import Deriving.Aeson
 import GHC.TypeLits (Symbol)
 import GeniusYield.Imports ((&))
@@ -23,6 +24,7 @@ data Transaction = Transaction
   { txSender :: !GYAddressBech32
   , txRecipient :: !GYAddressBech32
   , txNonce :: !Natural
+  , txDistributionTime :: !(Maybe POSIXTime)
   }
   deriving stock (Show, Eq, Generic)
   deriving
@@ -42,4 +44,4 @@ handleTransaction ::
   IO GYTx
 handleTransaction cfg Transaction {..} = do
   logInfo cfg "Transaction API requested."
-  addUtxoRun cfg (addressFromBech32 txSender) (addressFromBech32 txRecipient) $ fromConstant txNonce
+  addUtxoRun cfg (addressFromBech32 txSender) (addressFromBech32 txRecipient) (fromConstant txNonce) txDistributionTime

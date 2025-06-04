@@ -12,6 +12,8 @@ components:
     Settings:
       description: UTxO Accumulator server settings.
       properties:
+        accumulation_value:
+          type: string
         network:
           type: string
         version:
@@ -19,6 +21,7 @@ components:
       required:
       - network
       - version
+      - accumulation_value
       type: object
     Transaction:
       description: UTxO Accumulator transaction.

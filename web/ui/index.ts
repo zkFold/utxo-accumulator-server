@@ -1,184 +1,135 @@
-import * as CSL from '@emurgo/cardano-serialization-lib-browser';
+import { wallets, getWalletApi, getWalletUsedAddress, hexToBech32, signAndSubmitTxWithWallet, WalletApi, WalletInfo } from './wallet';
+import { serverBases, fetchAllServerSettings, sendTransaction, serverSettings, txEndpoint } from './api';
+import { parseAccumulationValue, setResultMessage, clearResultMessage, isValidPreprodBech32Address } from './utils';
+import { walletSelect, serverSelect, amountSelect, addressInputGrid, fillAddrBtn, sendBtn, resultDivGrid, title, initUILayout } from './ui';
 
-// Simple UI for accumulating a blockchain address
-const form = document.createElement('form');
-form.id = 'accumulate-form';
-form.innerHTML = `
-  <label for="address">Blockchain Address:</label>
-  <input type="text" id="address" name="address" style="width: 600px;" />
-  <button type="submit">Accumulate</button>
-  <div id="result" style="margin-top:1em;"></div>
-`;
-document.body.appendChild(form);
+// Set up the UI layout and structure
+initUILayout();
 
-// Add Lace wallet connect button
-const laceBtn = document.createElement('button');
-laceBtn.textContent = 'Connect Lace Wallet';
-laceBtn.type = 'button';
-laceBtn.style.marginLeft = '1em';
-form.querySelector('label')!.appendChild(laceBtn);
+// --- UI Initialization ---
+// Populate wallet dropdown
+wallets.forEach((w: WalletInfo) => {
+  const opt = document.createElement('option');
+  opt.value = w.key;
+  opt.textContent = w.label;
+  walletSelect.appendChild(opt);
+});
 
-let laceApi: any = null;
-laceBtn.onclick = async () => {
-  if ((window as any).cardano?.lace) {
-    try {
-      laceApi = await (window as any).cardano.lace.enable();
-      alert('Lace wallet connected!');
-    } catch (e) {
-      alert('Failed to connect Lace wallet: ' + e);
+// Populate amount dropdown
+const amountOptions = [
+  { label: '100 ada', value: 100_000_000 },
+  { label: '1000 ada', value: 1_000_000_000 },
+  { label: '10000 ada', value: 10_000_000_000 },
+];
+amountOptions.forEach(opt => {
+  const option = document.createElement('option');
+  option.value = String(opt.value);
+  option.textContent = opt.label;
+  amountSelect.appendChild(option);
+});
+
+// Clear result on any user interaction
+walletSelect.addEventListener('input', () => clearResultMessage(resultDivGrid));
+serverSelect.addEventListener('input', () => clearResultMessage(resultDivGrid));
+amountSelect.addEventListener('input', () => clearResultMessage(resultDivGrid));
+addressInputGrid.addEventListener('input', () => clearResultMessage(resultDivGrid));
+fillAddrBtn.addEventListener('click', () => clearResultMessage(resultDivGrid));
+sendBtn.addEventListener('click', () => clearResultMessage(resultDivGrid));
+
+// Helper to rebuild server dropdown based on selected amount
+function rebuildServerDropdown(selectedAmount: number) {
+  while (serverSelect.firstChild) serverSelect.removeChild(serverSelect.firstChild);
+  let found = false;
+  serverBases.forEach((s) => {
+    const settings = serverSettings[s.base];
+    const accVal = settings ? parseAccumulationValue(settings.accumulation_value) : null;
+    if (settings && accVal === selectedAmount) {
+      const opt = document.createElement('option');
+      opt.value = s.base;
+      opt.textContent = s.label;
+      serverSelect.appendChild(opt);
+      if (!found) found = true;
     }
-  } else {
-    alert('Lace wallet not found. Please install or enable it.');
+  });
+  if (!found) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'No server available for this amount';
+    opt.disabled = true;
+    opt.selected = true;
+    serverSelect.appendChild(opt);
   }
+}
+
+let walletApi: WalletApi = null;
+let walletKey: string = wallets[0].key;
+walletSelect.onchange = () => {
+  walletKey = walletSelect.value;
+  walletApi = null;
 };
-
-// Add Eternl wallet connect button
-const eternlBtn = document.createElement('button');
-eternlBtn.textContent = 'Connect Eternl Wallet';
-eternlBtn.type = 'button';
-eternlBtn.style.marginLeft = '1em';
-form.querySelector('label')!.appendChild(eternlBtn);
-
-let eternlApi: any = null;
-eternlBtn.onclick = async () => {
-  if ((window as any).cardano?.eternl) {
-    try {
-      eternlApi = await (window as any).cardano.eternl.enable();
-      alert('Eternl wallet connected!');
-    } catch (e) {
-      alert('Failed to connect Eternl wallet: ' + e);
-    }
-  } else {
-    alert('Eternl wallet not found. Please install or enable it.');
-  }
-};
-
-// Add button to fill input with wallet address
-const fillAddrBtn = document.createElement('button');
-fillAddrBtn.textContent = 'Fill with Wallet Address';
-fillAddrBtn.type = 'button';
-fillAddrBtn.style.marginLeft = '1em';
-form.querySelector('label')!.appendChild(fillAddrBtn);
 
 fillAddrBtn.onclick = async () => {
-  let api = eternlApi || laceApi;
-  if (!api) {
-    alert('Connect a wallet first!');
-    return;
-  }
+  if (!walletKey) return;
   try {
-    const used = await api.getUsedAddresses();
-    if (used && used.length > 0) {
-      let addr = used[0];
-      let debugMsg = `Original address (hex?): ${addr}\n`;
-      try {
-        debugMsg += `CSL: imported module\n`;
-        if (CSL && CSL.Address && /^[0-9a-fA-F]+$/.test(addr)) {
-          debugMsg += 'Attempting hex to bech32 conversion...\n';
-          const bytes = Uint8Array.from(addr.match(/.{1,2}/g).map((x: string) => parseInt(x, 16)));
-          debugMsg += `Bytes: [${Array.from(bytes).join(', ')}]\n`;
-          addr = CSL.Address.from_bytes(bytes).to_bech32();
-          debugMsg += `Converted to bech32: ${addr}\n`;
-        } else {
-          debugMsg += 'CSL.Address not found or address not hex.\n';
-        }
-      } catch (e) {
-        debugMsg += 'Conversion error: ' + e + '\n';
-      }
-      (document.getElementById('address') as HTMLInputElement).value = addr;
-      alert(debugMsg); // Show debug info
-    } else {
-      alert('No used addresses found in wallet.');
+    walletApi = walletApi || await getWalletApi(walletKey);
+    if (!walletApi) return;
+    const addrHex = await getWalletUsedAddress(walletApi);
+    if (addrHex) {
+      const bech32 = hexToBech32(addrHex);
+      if (bech32) addressInputGrid.value = bech32;
     }
-  } catch (e) {
-    alert('Failed to get wallet address: ' + e);
-  }
+  } catch {}
 };
 
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const address = (document.getElementById('address') as HTMLInputElement).value;
-  const resultDiv = document.getElementById('result');
-  resultDiv!.textContent = 'Sending...';
-
-  // The API expects a JSON object: { tx_sender, tx_recipient, tx_nonce }
-  const body = JSON.stringify({
+sendBtn.onclick = async () => {
+  const address = addressInputGrid.value;
+  if (!isValidPreprodBech32Address(address)) {
+    setResultMessage(resultDivGrid, 'Please enter a valid Cardano (Preprod testnet) bech32 address.');
+    return;
+  }
+  setResultMessage(resultDivGrid, 'Sending...');
+  walletApi = walletApi || await getWalletApi(walletKey);
+  if (!walletApi) {
+    setResultMessage(resultDivGrid, `${walletKey} wallet not found. Please install or enable it.`);
+    return;
+  }
+  const amount = Number(amountSelect.value);
+  const serverBase = serverSelect.value;
+  if (!serverBase) {
+    setResultMessage(resultDivGrid, 'No server selected.');
+    return;
+  }
+  const body = {
     tx_sender: address,
     tx_recipient: address,
-    tx_nonce: 0
-  });
-
+    tx_nonce: amount
+  };
   try {
-    const response = await fetch('http://localhost:8082/v0/transaction', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json;charset=utf-8',
-        'api-key': '123456',
-      },
-      body,
-    } as any);
-
+    const response = await sendTransaction(serverBase, body);
     if (!response.ok) {
-      resultDiv!.textContent = `Error: ${response.status} ${response.statusText}`;
+      setResultMessage(resultDivGrid, `Error: ${response.status} ${response.statusText}`);
       return;
     }
     const data = await response.json();
-    // Use the helper for Eternl or Lace if connected
-    if (eternlApi && data && typeof data === 'string') {
-      const ok = await signAndSubmitTxWithWallet(eternlApi, data, 'Eternl', resultDiv!);
+    if (walletApi && data && typeof data === 'string') {
+      const ok = await signAndSubmitTxWithWallet(walletApi, data, wallets.find((w: WalletInfo) => w.key === walletKey)?.label || walletKey, resultDivGrid);
       if (ok) return;
+      setResultMessage(resultDivGrid, 'Signing cancelled.');
+      return;
     }
-    if (laceApi && data && typeof data === 'string') {
-      const ok = await signAndSubmitTxWithWallet(laceApi, data, 'Lace', resultDiv!);
-      if (ok) return;
-    }
-    resultDiv!.textContent = 'Success! Transaction: ' + JSON.stringify(data);
+    setResultMessage(resultDivGrid, 'Success! Transaction: ' + JSON.stringify(data));
   } catch (err) {
-    resultDiv!.textContent = 'Request failed: ' + err;
+    setResultMessage(resultDivGrid, 'Request failed: ' + err);
   }
-});
+};
 
-// Helper to sign and submit a transaction with a wallet (Lace or Eternl)
-async function signAndSubmitTxWithWallet(walletApi: any, cborHex: string, walletLabel: string, resultDiv: HTMLElement) {
-  try {
-    const unsignedTx = CSL.Transaction.from_bytes(hexToBytes(cborHex));
-    const originalWitnessSet = unsignedTx.witness_set();
-    const witnessSetHex = await walletApi.signTx(cborHex, true);
-    const walletWitnessSet = CSL.TransactionWitnessSet.from_bytes(hexToBytes(witnessSetHex));
-    // Clone the original witness set
-    const mergedWitnessSet = CSL.TransactionWitnessSet.from_bytes(originalWitnessSet.to_bytes());
-    // Merge vkey witnesses: append all from both sets
-    const mergedVkeys = CSL.Vkeywitnesses.new();
-    const origVkeys = originalWitnessSet.vkeys();
-    if (origVkeys) for (let i = 0; i < origVkeys.len(); i++) mergedVkeys.add(origVkeys.get(i));
-    const walletVkeys = walletWitnessSet.vkeys();
-    if (walletVkeys) for (let i = 0; i < walletVkeys.len(); i++) mergedVkeys.add(walletVkeys.get(i));
-    if (mergedVkeys.len() > 0) mergedWitnessSet.set_vkeys(mergedVkeys);
-    // Build the signed transaction
-    const signedTx = CSL.Transaction.new(
-      unsignedTx.body(),
-      mergedWitnessSet,
-      unsignedTx.auxiliary_data()
-    );
-    const signedTxHex = bytesToHex(signedTx.to_bytes());
-    const txHash = await walletApi.submitTx(signedTxHex);
-    resultDiv.textContent = `Transaction signed and submitted with ${walletLabel}! Tx Hash: ${txHash}`;
-    return true;
-  } catch (err) {
-    resultDiv.textContent = `${walletLabel} signing or submission failed: ${err}`;
-    return false;
-  }
-}
+amountSelect.onchange = () => {
+  const selectedAmount = Number(amountSelect.value);
+  rebuildServerDropdown(selectedAmount);
+};
 
-// Helper functions for hex <-> bytes
-function hexToBytes(hex: string): Uint8Array {
-  if (hex.length % 2 !== 0) throw new Error('Invalid hex string');
-  const arr = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    arr[i / 2] = parseInt(hex.slice(i, i + 2), 16);
-  }
-  return arr;
-}
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-}
+(async () => {
+  await fetchAllServerSettings();
+  const initialAmount = Number(amountSelect.value);
+  rebuildServerDropdown(initialAmount);
+})();
