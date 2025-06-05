@@ -123,8 +123,8 @@ sendBtn.onclick = async () => {
   const body = {
     tx_sender: senderAddress,
     tx_recipient: address,
-    tx_nonce_l: nonceL,
-    tx_nonce_r: nonceR,
+    tx_nonce_l: `0x${nonceL}`,
+    tx_nonce_r: `0x${nonceR}`,
     tx_distribution_time: tx_distribution_time === null ? null : tx_distribution_time
   };
   try {

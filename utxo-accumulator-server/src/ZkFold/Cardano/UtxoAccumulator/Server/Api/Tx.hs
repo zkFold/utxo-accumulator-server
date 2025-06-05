@@ -3,6 +3,7 @@ module ZkFold.Cardano.UtxoAccumulator.Server.Api.Tx (
   handleTransaction,
 ) where
 
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), object, withObject, (.:), (.:?), (.=))
 import Data.Swagger qualified as Swagger
 import Data.Time.Clock.POSIX (POSIXTime)
 import Deriving.Aeson
@@ -28,14 +29,30 @@ data Transaction = Transaction
   , txDistributionTime :: !(Maybe POSIXTime)
   }
   deriving stock (Show, Eq, Generic)
-  deriving
-    (FromJSON, ToJSON)
-    via CustomJSON '[FieldLabelModifier '[StripPrefix TransactionPrefix, CamelToSnake]] Transaction
+
+instance FromJSON Transaction where
+  parseJSON = withObject "Transaction" $ \o ->
+    Transaction
+      <$> o .: "tx_sender"
+      <*> o .: "tx_recipient"
+      <*> (o .: "tx_nonce_l" >>= parseNatural)
+      <*> (o .: "tx_nonce_r" >>= parseNatural)
+      <*> o .:? "tx_distribution_time"
 
 instance Swagger.ToSchema Transaction where
   declareNamedSchema =
     Swagger.genericDeclareNamedSchema Swagger.defaultSchemaOptions {Swagger.fieldLabelModifier = dropSymbolAndCamelToSnake @TransactionPrefix}
       & addSwaggerDescription "UTxO Accumulator transaction."
+
+instance ToJSON Transaction where
+  toJSON Transaction {..} =
+    object
+      [ "tx_sender" .= txSender
+      , "tx_recipient" .= txRecipient
+      , "tx_nonce_l" .= String (writeNaturalToHex txNonceL)
+      , "tx_nonce_r" .= String (writeNaturalToHex txNonceR)
+      , "tx_distribution_time" .= txDistributionTime
+      ]
 
 type TransactionAPI = Summary "Transaction" :> Description "Build a UTxO Accumulator transaction." :> ReqBody '[JSON] Transaction :> Post '[JSON] GYTx
 
