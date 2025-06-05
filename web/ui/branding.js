@@ -9,7 +9,7 @@ export const BRANDING = {
     // Add more labels as needed
   },
   // Logo (set to empty string for no logo)
-  logoUrl: "logo.png",
+  logoUrl: "logo.svg",
   // Main style variables
   styles: {
     primaryColor: "#0057b8",

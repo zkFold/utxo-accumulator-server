@@ -17,8 +17,31 @@ button {
   gap: 1em;
   margin-bottom: 2em;
 }
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 1.2em;
+  margin-bottom: 2em;
+}
 #app-logo {
   height: 48px;
   width: auto;
   display: none;
+}
+.app-logo {
+  height: 48px;
+  width: 48px;
+  object-fit: contain;
+  margin-right: 1.2em;
+}
+.app-title {
+  font-size: 2em;
+  font-weight: bold;
+  margin: 0;
+}
+.app-subtitle {
+  font-size: 1.1em;
+  color: var(--primary-color, #0057b8);
+  margin-top: 0.2em;
+  font-weight: 500;
 }

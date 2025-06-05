@@ -63,19 +63,52 @@ resultDivGrid.style.minHeight = '1.5em';
 resultDivGrid.style.maxWidth = '750px';
 resultDivGrid.style.overflowWrap = 'break-word';
 
+// --- HEADER CREATION ---
+export const logo = document.createElement('img');
+logo.src = BRANDING.logoUrl;
+logo.alt = 'Logo';
+logo.className = 'app-logo';
+logo.style.height = '48px';
+logo.style.width = '48px';
+logo.style.objectFit = 'contain';
+logo.style.marginRight = '1.2em';
+
+export const header = document.createElement('div');
+header.className = 'app-header';
+header.style.display = 'flex';
+header.style.alignItems = 'center';
+header.style.gap = '1.2em';
+
+const titleBlock = document.createElement('div');
+titleBlock.style.display = 'flex';
+titleBlock.style.flexDirection = 'column';
+titleBlock.appendChild(title);
+titleBlock.appendChild(subtitle);
+
+header.appendChild(logo);
+header.appendChild(titleBlock);
+
 // Set up the UI layout and structure
 export function initUILayout() {
   document.body.innerHTML = '';
+  // Create a single flex column container for header and content
+  const pageContainer = document.createElement('div');
+  pageContainer.style.display = 'flex';
+  pageContainer.style.flexDirection = 'column';
+  pageContainer.style.alignItems = 'center';
+  pageContainer.style.justifyContent = 'center';
+  pageContainer.style.minHeight = '100vh';
+  pageContainer.style.width = '100%';
+
+  // Add header to the container
+  pageContainer.appendChild(header);
+
+  // Main content container
   const container = document.createElement('div');
   container.style.display = 'flex';
   container.style.flexDirection = 'column';
-  container.style.alignItems = 'flex-start';
+  container.style.alignItems = 'center';
   container.style.gap = '1em';
-  document.body.appendChild(container);
-
-  // Title and subtitle
-  container.appendChild(title);
-  container.appendChild(subtitle);
 
   // Two-column layout for labels and inputs
   const formGrid = document.createElement('div');
@@ -137,12 +170,8 @@ export function initUILayout() {
   formGrid.appendChild(resultDivGrid);
 
   container.appendChild(formGrid);
-
-  // Center the content of the page
-  container.style.alignItems = 'center';
-  container.style.justifyContent = 'center';
-  container.style.margin = '0 auto';
-  container.style.minHeight = '100vh';
+  pageContainer.appendChild(container);
+  document.body.appendChild(pageContainer);
 
   // Remove vertical scrollbar if not needed
   const style = document.createElement('style');

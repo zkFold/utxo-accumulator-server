@@ -6,15 +6,19 @@ import { parseAccumulationValue, setResultMessage, clearResultMessage, isValidPr
 import { walletSelect, serverSelect, amountSelect, addressInputGrid, fillAddrBtn, sendBtn, resultDivGrid, title, subtitle, initUILayout, removalTimeSelect } from './ui';
 
 // Set up branding: logo, title, styles, and labels
-document.getElementById('app-title')!.textContent = BRANDING.appTitle;
+document.getElementById('app-title')!.textContent = BRANDING.title;
 document.title = BRANDING.title;
-const logoEl = document.getElementById('app-logo') as HTMLImageElement;
-if (BRANDING.logoUrl) {
-  logoEl.src = BRANDING.logoUrl;
-  logoEl.style.display = 'inline';
-} else {
-  logoEl.style.display = 'none';
-}
+// Set favicon dynamically from BRANDING.logoUrl
+(function setFavicon() {
+  let favicon = document.querySelector('link[rel~="icon"]') as HTMLLinkElement | null;
+  if (!favicon) {
+    favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    document.head.appendChild(favicon);
+  }
+  favicon.type = BRANDING.logoUrl.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+  favicon.href = BRANDING.logoUrl;
+})();
 // Inject style variables
 const styleVars = BRANDING.styles;
 for (const key in styleVars) {
