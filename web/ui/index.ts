@@ -3,11 +3,11 @@ import { BRANDING } from './branding';
 import { wallets, getWalletApi, getWalletAnyAddress, hexToBech32, signAndSubmitTxWithWallet, WalletApi, WalletInfo } from './wallet';
 import { serverBases, fetchAllServerSettings, sendTransaction, serverSettings, txEndpoint } from './api';
 import { parseAccumulationValue, setResultMessage, clearResultMessage, isValidPreprodBech32Address, randomBlsScalarHex } from './utils';
-import { walletSelect, serverSelect, amountSelect, addressInputGrid, fillAddrBtn, sendBtn, resultDivGrid, title, initUILayout, removalTimeSelect } from './ui';
+import { walletSelect, serverSelect, amountSelect, addressInputGrid, fillAddrBtn, sendBtn, resultDivGrid, title, subtitle, initUILayout, removalTimeSelect } from './ui';
 
 // Set up branding: logo, title, styles, and labels
 document.getElementById('app-title')!.textContent = BRANDING.appTitle;
-document.title = BRANDING.appTitle;
+document.title = BRANDING.title;
 const logoEl = document.getElementById('app-logo') as HTMLImageElement;
 if (BRANDING.logoUrl) {
   logoEl.src = BRANDING.logoUrl;
@@ -25,8 +25,9 @@ for (const key in styleVars) {
 initUILayout();
 
 // Apply branding to UI labels and buttons
-title.textContent = BRANDING.appTitle;
-document.title = BRANDING.appTitle;
+title.textContent = BRANDING.title;
+document.title = BRANDING.title;
+subtitle.textContent = BRANDING.subtitle;
 
 // Set button and label texts from branding config
 fillAddrBtn.textContent = BRANDING.labels.useWalletAddress || 'Use Wallet Address';

@@ -1,7 +1,7 @@
 // Centralized branding and customization for the UTxO Accumulator UI
 export const BRANDING = {
   // Visible texts
-  appTitle: "UTxO Accumulator",
+  title: "UTxO Accumulator",
   subtitle: "Efficient UTxO Management",
   labels: {
     useWalletAddress: "Use Wallet Address",

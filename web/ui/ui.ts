@@ -4,9 +4,11 @@ import { BRANDING } from './branding';
 // Handles UI creation and exposes references to key DOM elements
 
 export const title = document.createElement('h1');
-title.textContent = BRANDING.appTitle;
+title.textContent = BRANDING.title;
 
-document.body.prepend(title);
+export const subtitle = document.createElement('div');
+subtitle.textContent = BRANDING.subtitle;
+subtitle.className = 'app-subtitle';
 
 export const walletSelect = document.createElement('select');
 walletSelect.id = 'wallet-select';
@@ -71,8 +73,9 @@ export function initUILayout() {
   container.style.gap = '1em';
   document.body.appendChild(container);
 
-  // Title
+  // Title and subtitle
   container.appendChild(title);
+  container.appendChild(subtitle);
 
   // Two-column layout for labels and inputs
   const formGrid = document.createElement('div');
