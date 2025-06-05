@@ -1,27 +1,33 @@
 body {
-  font-family: var(--font-family);
-  background: var(--secondary-color);
+  background-color: var(--secondary-color, #f5f5f5);
+  font-family: var(--font-family, 'Segoe UI', Arial, sans-serif);
+  color: var(--primary-color, #222);
+  font-size: 16px;
+  line-height: 1.5;
 }
 button {
-  background: var(--primary-color);
-  color: #fff;
-  border: none;
-  border-radius: var(--border-radius);
-  padding: 0.5em 1.2em;
-  font-size: 1em;
-  cursor: pointer;
+  background: var(--primary-color, #222);
+  color: var(--button-text-color, #fff);
+  border: 1px solid var(--primary-color, #222);
+  border-radius: var(--border-radius, 0.5em);
+  padding: 0.7em 1.5em;
+  font-size: 1.1em;
+  font-family: var(--font-family, 'Segoe UI', Arial, sans-serif);
+  font-weight: 700;
+  box-shadow: var(--button-box-shadow, 0 2px 8px 0 #0001);
+  transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
 }
-#app-header {
+button:hover {
+  background: var(--button-hover-bg, #444);
+  color: var(--button-hover-text, #fff);
+  box-shadow: var(--button-hover-box-shadow, 0 4px 16px 0 #0002);
+}
+#app-header, .app-header {
   display: flex;
   align-items: center;
   gap: 1em;
   margin-bottom: 2em;
-}
-.app-header {
-  display: flex;
-  align-items: center;
-  gap: 1.2em;
-  margin-bottom: 2em;
+  padding: 2em 0 1em 0;
 }
 #app-logo {
   height: 48px;
@@ -29,19 +35,75 @@ button {
   display: none;
 }
 .app-logo {
-  height: 48px;
-  width: 48px;
-  object-fit: contain;
-  margin-right: 1.2em;
+  height: 64px;
+  width: 100px;
+  display: block;
+  background: var(--logo-bg, #fff);
+  border-radius: 50%;
+  box-shadow: var(--logo-box-shadow, 0 2px 8px 0 #0001);
 }
 .app-title {
-  font-size: 2em;
-  font-weight: bold;
+  font-family: var(--font-family, 'Segoe UI', Arial, sans-serif);
+  font-size: 2.5em;
+  font-weight: 700;
   margin: 0;
+  color: var(--title-color, #222);
+  letter-spacing: 1px;
 }
 .app-subtitle {
-  font-size: 1.1em;
-  color: var(--primary-color, #0057b8);
+  font-family: var(--font-family, 'Segoe UI', Arial, sans-serif);
+  font-size: 1.2em;
+  color: var(--subtitle-color, #888);
   margin-top: 0.2em;
+  font-weight: 400;
+}
+input, select {
+  font-family: var(--font-family, 'Segoe UI', Arial, sans-serif);
+  border-radius: var(--border-radius, 0.5em);
+  border: 1.5px solid var(--primary-color, #222);
+  padding: 0.7em 1.2em;
+  background: var(--secondary-color, #fff);
+  color: var(--primary-color, #222);
+  font-size: 1.1em;
   font-weight: 500;
+  box-shadow: var(--input-box-shadow, 0 2px 8px 0 #0001);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+input:focus, select:focus {
+  border-color: var(--primary-color, #444);
+  box-shadow: 0 0 0 2px #8882;
+}
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="gray" height="16" viewBox="0 0 24 24" width="16" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 1em center;
+  background-size: 1.2em;
+  padding-right: 2.5em;
+}
+input::placeholder {
+  color: var(--input-placeholder, #aaa);
+  opacity: 1;
+  font-weight: 400;
+}
+select option {
+  background: var(--secondary-color, #fff) !important;
+  color: var(--primary-color, #222) !important;
+}
+select option:checked, select option[selected] {
+  background: var(--select-checked-bg, #e0e0e0) !important;
+  color: var(--primary-color, #222) !important;
+  font-weight: 700;
+}
+select option:hover, select option:focus {
+  background: var(--select-hover-bg, #f0f0f0) !important;
+  color: var(--primary-color, #222) !important;
+}
+select:focus {
+  outline: none;
+  border-color: var(--primary-color, #444);
+  box-shadow: 0 0 0 2px #8882;
 }
