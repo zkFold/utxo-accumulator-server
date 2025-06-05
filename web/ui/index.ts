@@ -1,7 +1,7 @@
-import { wallets, getWalletApi, getWalletUsedAddress, hexToBech32, signAndSubmitTxWithWallet, WalletApi, WalletInfo } from './wallet';
+import { wallets, getWalletApi, getWalletAnyAddress, hexToBech32, signAndSubmitTxWithWallet, WalletApi, WalletInfo } from './wallet';
 import { serverBases, fetchAllServerSettings, sendTransaction, serverSettings, txEndpoint } from './api';
 import { parseAccumulationValue, setResultMessage, clearResultMessage, isValidPreprodBech32Address } from './utils';
-import { walletSelect, serverSelect, amountSelect, addressInputGrid, fillAddrBtn, sendBtn, resultDivGrid, title, initUILayout } from './ui';
+import { walletSelect, serverSelect, amountSelect, addressInputGrid, fillAddrBtn, sendBtn, resultDivGrid, title, initUILayout, removalTimeSelect } from './ui';
 
 // Set up the UI layout and structure
 initUILayout();
@@ -65,15 +65,16 @@ let walletApi: WalletApi = null;
 let walletKey: string = wallets[0].key;
 walletSelect.onchange = () => {
   walletKey = walletSelect.value;
-  walletApi = null;
+  walletApi = null; // Force re-enable on wallet change
 };
 
 fillAddrBtn.onclick = async () => {
   if (!walletKey) return;
+  // Always re-enable walletApi to ensure we get the new wallet context
+  walletApi = await getWalletApi(walletKey);
+  if (!walletApi) return;
   try {
-    walletApi = walletApi || await getWalletApi(walletKey);
-    if (!walletApi) return;
-    const addrHex = await getWalletUsedAddress(walletApi);
+    const addrHex = await getWalletAnyAddress(walletApi);
     if (addrHex) {
       const bech32 = hexToBech32(addrHex);
       if (bech32) addressInputGrid.value = bech32;
@@ -82,27 +83,47 @@ fillAddrBtn.onclick = async () => {
 };
 
 sendBtn.onclick = async () => {
+  // Always re-enable walletApi to ensure we get the new wallet context
+  walletApi = await getWalletApi(walletKey);
+  if (!walletApi) {
+    setResultMessage(resultDivGrid, `${walletKey} wallet not found. Please install or enable it.`);
+    return;
+  }
+  let senderAddress = '';
+  try {
+    const addrHex = await getWalletAnyAddress(walletApi);
+    if (addrHex) {
+      const bech32 = hexToBech32(addrHex);
+      if (bech32) senderAddress = bech32;
+    }
+  } catch {}
+  if (!senderAddress || !isValidPreprodBech32Address(senderAddress)) {
+    setResultMessage(resultDivGrid, 'Could not get a valid Cardano (Preprod testnet) address from the wallet.');
+    return;
+  }
   const address = addressInputGrid.value;
   if (!isValidPreprodBech32Address(address)) {
     setResultMessage(resultDivGrid, 'Please enter a valid Cardano (Preprod testnet) bech32 address.');
     return;
   }
   setResultMessage(resultDivGrid, 'Sending...');
-  walletApi = walletApi || await getWalletApi(walletKey);
-  if (!walletApi) {
-    setResultMessage(resultDivGrid, `${walletKey} wallet not found. Please install or enable it.`);
-    return;
-  }
   const amount = Number(amountSelect.value);
   const serverBase = serverSelect.value;
   if (!serverBase) {
     setResultMessage(resultDivGrid, 'No server selected.');
     return;
   }
+  // Compute POSIX time for removal, or null
+  let tx_distribution_time: number | null = null;
+  const removalSeconds = Number(removalTimeSelect.value);
+  if (removalSeconds > 0) {
+    tx_distribution_time = Math.floor(Date.now() / 1000) + removalSeconds;
+  }
   const body = {
-    tx_sender: address,
+    tx_sender: senderAddress,
     tx_recipient: address,
-    tx_nonce: amount
+    tx_nonce: amount,
+    tx_distribution_time: tx_distribution_time === null ? null : tx_distribution_time
   };
   try {
     const response = await sendTransaction(serverBase, body);

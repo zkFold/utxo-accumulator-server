@@ -61,3 +61,16 @@ export async function signAndSubmitTxWithWallet(walletApi: WalletApi, cborHex: s
     return false;
   }
 }
+
+export async function getWalletAnyAddress(walletApi: WalletApi): Promise<string | null> {
+  // Try used addresses first
+  let addrs = await walletApi.getUsedAddresses();
+  if (addrs && addrs.length > 0) return Array.isArray(addrs) ? addrs[0] : addrs;
+  // Then unused addresses
+  addrs = await walletApi.getUnusedAddresses();
+  if (addrs && addrs.length > 0) return Array.isArray(addrs) ? addrs[0] : addrs;
+  // Then change addresses
+  addrs = await walletApi.getChangeAddress ? [await walletApi.getChangeAddress()] : [];
+  if (addrs && addrs.length > 0 && addrs[0]) return addrs[0];
+  return null;
+}

@@ -18,6 +18,24 @@ export const amountSelect = document.createElement('select');
 amountSelect.id = 'amount-select';
 amountSelect.style.width = '350px';
 
+// --- UTxO Removal Timer Dropdown ---
+export const removalTimeSelect = document.createElement('select');
+removalTimeSelect.id = 'removalTimeSelect';
+removalTimeSelect.style.width = '350px';
+const removalOptions = [
+  { label: '1 hour from now', value: '3600', default: true },
+  { label: '1 day from now', value: String(24 * 3600) },
+  { label: '1 week from now', value: String(7 * 24 * 3600) },
+  { label: 'No timer (removed manually)', value: '' },
+];
+removalOptions.forEach(opt => {
+  const option = document.createElement('option');
+  option.value = opt.value;
+  option.textContent = opt.label;
+  if (opt.default) option.selected = true;
+  removalTimeSelect.appendChild(option);
+});
+
 export const addressInputGrid = document.createElement('input');
 addressInputGrid.type = 'text';
 addressInputGrid.id = 'address';
@@ -80,6 +98,13 @@ export function initUILayout() {
   amountLabelGrid.textContent = 'Amount:';
   formGrid.appendChild(amountLabelGrid);
   formGrid.appendChild(amountSelect);
+
+  // --- UTxO Removal Timer row ---
+  const removalTimeLabelGrid = document.createElement('label');
+  removalTimeLabelGrid.htmlFor = 'removalTimeSelect';
+  removalTimeLabelGrid.textContent = 'Transaction timer:';
+  formGrid.appendChild(removalTimeLabelGrid);
+  formGrid.appendChild(removalTimeSelect);
 
   // Server row
   const serverLabelGrid = document.createElement('label');

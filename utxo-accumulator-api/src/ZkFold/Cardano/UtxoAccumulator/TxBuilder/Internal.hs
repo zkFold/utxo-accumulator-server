@@ -24,7 +24,7 @@ postScript accumulationValue = do
     mustHaveOutput
       GYTxOut
         { gyTxOutAddress = parkingAddr
-        , gyTxOutValue = valueFromLovelace 20_000_000
+        , gyTxOutValue = mempty
         , gyTxOutDatum = Nothing
         , gyTxOutRefS = Just $ GYPlutusScript $ utxoAccumulatorScript accumulationValue
         }
