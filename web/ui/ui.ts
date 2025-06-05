@@ -59,11 +59,6 @@ resultDivGrid.style.minHeight = '1.5em';
 resultDivGrid.style.maxWidth = '750px';
 resultDivGrid.style.overflowWrap = 'break-word';
 
-export function buildFormGrid(walletOptions: HTMLOptionElement[], amountOptions: HTMLOptionElement[], serverOptions: HTMLOptionElement[]) {
-  // ...builds and returns the formGrid element, appends all controls in order...
-  // For brevity, you can fill this in as needed.
-}
-
 // Set up the UI layout and structure
 export function initUILayout() {
   document.body.innerHTML = '';
