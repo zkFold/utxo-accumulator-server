@@ -107,7 +107,6 @@ sendBtn.onclick = async () => {
     return;
   }
   setResultMessage(resultDivGrid, 'Sending...');
-  const amount = Number(amountSelect.value);
   const serverBase = serverSelect.value;
   if (!serverBase) {
     setResultMessage(resultDivGrid, 'No server selected.');

@@ -1,56 +1,45 @@
-# Blockchain provider used by Atlas, our off-chain transaction building tool.
-# Head over to https://atlas-app.io/getting-started/endpoints#providing-data-provider section to know how to configure `coreProvider` and what all options are available for it.
+accumulationValue: 100000000
 coreProvider:
   maestroToken: aCmZhlBBq7f3dHls9INwu9KlsNQwUXS3
   turboSubmit: false
-# Network id, only `mainnet` and `preprod` are supported for at the moment.
-networkId: preprod
-databasePath: "txs.json"
-# Logging configuration. It's an array to cater for potentially multiple scribes.
-# See it's description mentioned at https://atlas-app.io/getting-started/endpoints#providing-data-provider for more information.
+databasePath: txs.json
 logging:
-  - type:
-      tag: stderr
-      # Possible values of `severity` are `Debug`, `Info`, `Warning` and `Error`.
-    severity: Debug
-      # Possible values of `verbosity` are `V0`, `V1`, `V2`, `V3` and `V4`. Consult https://hackage.haskell.org/package/katip-0.8.8.0/docs/Katip.html#t:Verbosity for more information about it.
-    verbosity: V2
-  # Port to serve endpoints at.
+- severity: Debug
+  type:
+    tag: stderr
+  verbosity: V2
+maybeScriptRef: 306d4da712c1893c4b2fa0d74d6d3585eb0d4add4c2767bfc8d1138819577222#0
+maybeThreadTokenRef: 997fa89d285b888dd2860a9cb4a53b1ec56add3908ff9337468f437549d7b1a5#4
+networkId: preprod
 port: 8082
-  # API key to protect server endpoints with. It's value must be provided under `api-key` header of request.
-serverApiKey: "123456"
+serverApiKey: '123456'
 wallet:
-  tag: mnemonicWallet
   contents:
-    mnemonic:
-      - health
-      - unable
-      - dog
-      - lend
-      - artefact
-      - arctic
-      - dinner
-      - energy
-      - silent
-      - wealth
-      - shock
-      - safe
-      - glad
-      - mail
-      - gas
-      - flag
-      - beauty
-      - penalty
-      - mixed
-      - garbage
-      - erupt
-      - wonder
-      - magnet
-      - around
-    # Account index.
     accIx: 0
-    # Payment address index.
     addrIx: 0
-accumulationValue: 100000000
-maybeScriptRef:
-maybeThreadTokenRef:
+    mnemonic:
+    - health
+    - unable
+    - dog
+    - lend
+    - artefact
+    - arctic
+    - dinner
+    - energy
+    - silent
+    - wealth
+    - shock
+    - safe
+    - glad
+    - mail
+    - gas
+    - flag
+    - beauty
+    - penalty
+    - mixed
+    - garbage
+    - erupt
+    - wonder
+    - magnet
+    - around
+  tag: mnemonicWallet

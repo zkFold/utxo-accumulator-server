@@ -31,8 +31,11 @@ components:
       - exclusiveMinimum: false
         minimum: 0
         type: integer
-      maxItems: 3
-      minItems: 3
+      - exclusiveMinimum: false
+        minimum: 0
+        type: integer
+      maxItems: 4
+      minItems: 4
       properties:
         ion_time:
           multipleOf: 1.0e-12

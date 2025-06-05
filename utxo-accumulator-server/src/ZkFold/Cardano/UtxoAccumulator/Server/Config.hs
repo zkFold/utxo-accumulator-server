@@ -7,9 +7,9 @@ module ZkFold.Cardano.UtxoAccumulator.Server.Config (
 ) where
 
 import Data.Aeson (
-  Value (..),
   eitherDecodeFileStrict,
   eitherDecodeStrict,
+  toJSON,
  )
 import Data.Aeson.KeyMap qualified as KeyMap
 import Data.Bifunctor (Bifunctor (..))
@@ -17,7 +17,6 @@ import Data.ByteString qualified as B
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (fromMaybe)
 import Data.String (IsString (..))
-import Data.Text qualified as T
 import Data.Word (Word32)
 import Data.Yaml qualified as Yaml
 import Data.Yaml.Pretty qualified as YamlPretty
@@ -146,7 +145,7 @@ updateConfigYaml configPath mScriptRef mThreadTokenRef = do
     Yaml.decodeFileEither configPath >>= \case
       Left _ -> return Nothing
       Right v -> return (Just v)
-  let updateField k = maybe id (KeyMap.insert k . String . T.pack . show)
+  let updateField k = maybe id (KeyMap.insert k . toJSON)
       obj = fromMaybe KeyMap.empty mVal
       newObj =
         updateField "maybeScriptRef" mScriptRef $
