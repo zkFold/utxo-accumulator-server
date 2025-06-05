@@ -1,8 +1,10 @@
+import { BRANDING } from './branding';
+
 // ui.ts
 // Handles UI creation and exposes references to key DOM elements
 
 export const title = document.createElement('h1');
-title.textContent = 'UTxO Accumulator';
+title.textContent = BRANDING.appTitle;
 
 document.body.prepend(title);
 
@@ -44,13 +46,13 @@ addressInputGrid.style.width = '750px';
 addressInputGrid.placeholder = 'addr_test1abcdefghijklmnopqrstuvwxyz...';
 
 export const fillAddrBtn = document.createElement('button');
-fillAddrBtn.textContent = 'Use Wallet Address';
+fillAddrBtn.textContent = BRANDING.labels.input || 'Use Wallet Address';
 fillAddrBtn.type = 'button';
 fillAddrBtn.style.marginLeft = '1em';
 
 export const sendBtn = document.createElement('button');
 sendBtn.type = 'button';
-sendBtn.textContent = 'Send';
+sendBtn.textContent = BRANDING.labels.submit || 'Send';
 
 export const resultDivGrid = document.createElement('div');
 resultDivGrid.id = 'result';
@@ -83,35 +85,35 @@ export function initUILayout() {
   // Wallet row
   const walletLabelGrid = document.createElement('label');
   walletLabelGrid.htmlFor = 'wallet-select';
-  walletLabelGrid.textContent = 'Wallet:';
+  walletLabelGrid.textContent = BRANDING.labels.wallet || 'Wallet:';
   formGrid.appendChild(walletLabelGrid);
   formGrid.appendChild(walletSelect);
 
   // Amount row
   const amountLabelGrid = document.createElement('label');
   amountLabelGrid.htmlFor = 'amount-select';
-  amountLabelGrid.textContent = 'Amount:';
+  amountLabelGrid.textContent = BRANDING.labels.amount || 'Amount:';
   formGrid.appendChild(amountLabelGrid);
   formGrid.appendChild(amountSelect);
 
   // --- UTxO Removal Timer row ---
   const removalTimeLabelGrid = document.createElement('label');
   removalTimeLabelGrid.htmlFor = 'removalTimeSelect';
-  removalTimeLabelGrid.textContent = 'Transaction timer:';
+  removalTimeLabelGrid.textContent = BRANDING.labels.timer || 'Transaction timer:';
   formGrid.appendChild(removalTimeLabelGrid);
   formGrid.appendChild(removalTimeSelect);
 
   // Server row
   const serverLabelGrid = document.createElement('label');
   serverLabelGrid.htmlFor = 'server-select';
-  serverLabelGrid.textContent = 'Server:';
+  serverLabelGrid.textContent = BRANDING.labels.server || 'Server:';
   formGrid.appendChild(serverLabelGrid);
   formGrid.appendChild(serverSelect);
 
   // Address row
   const addressLabelGrid = document.createElement('label');
   addressLabelGrid.htmlFor = 'address';
-  addressLabelGrid.textContent = 'Address:';
+  addressLabelGrid.textContent = BRANDING.labels.address || 'Address:';
   formGrid.appendChild(addressLabelGrid);
   formGrid.appendChild(addressInputGrid);
 

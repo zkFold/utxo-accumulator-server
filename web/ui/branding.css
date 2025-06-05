@@ -1,0 +1,24 @@
+body {
+  font-family: var(--font-family);
+  background: var(--secondary-color);
+}
+button {
+  background: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 0.5em 1.2em;
+  font-size: 1em;
+  cursor: pointer;
+}
+#app-header {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  margin-bottom: 2em;
+}
+#app-logo {
+  height: 48px;
+  width: auto;
+  display: none;
+}
