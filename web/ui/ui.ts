@@ -46,13 +46,13 @@ addressInputGrid.style.width = '750px';
 addressInputGrid.placeholder = 'addr_test1abcdefghijklmnopqrstuvwxyz...';
 
 export const fillAddrBtn = document.createElement('button');
-fillAddrBtn.textContent = BRANDING.labels.input || 'Use Wallet Address';
+fillAddrBtn.textContent = BRANDING.labels.useWalletAddress || 'Use Wallet Address';
 fillAddrBtn.type = 'button';
 fillAddrBtn.style.marginLeft = '1em';
 
 export const sendBtn = document.createElement('button');
 sendBtn.type = 'button';
-sendBtn.textContent = BRANDING.labels.submit || 'Send';
+sendBtn.textContent = BRANDING.labels.send || 'Send';
 
 export const resultDivGrid = document.createElement('div');
 resultDivGrid.id = 'result';

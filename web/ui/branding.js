@@ -4,9 +4,8 @@ export const BRANDING = {
   appTitle: "UTxO Accumulator",
   subtitle: "Efficient UTxO Management",
   labels: {
-    input: "Enter UTxO",
-    submit: "Submit",
-    reset: "Reset",
+    useWalletAddress: "Use Wallet Address",
+    send: "Send",
     // Add more labels as needed
   },
   // Logo (set to empty string for no logo)

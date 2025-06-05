@@ -29,8 +29,8 @@ title.textContent = BRANDING.appTitle;
 document.title = BRANDING.appTitle;
 
 // Set button and label texts from branding config
-fillAddrBtn.textContent = BRANDING.labels.input || 'Use Wallet Address';
-sendBtn.textContent = BRANDING.labels.submit || 'Send';
+fillAddrBtn.textContent = BRANDING.labels.useWalletAddress || 'Use Wallet Address';
+sendBtn.textContent = BRANDING.labels.send || 'Send';
 // You can add more label assignments as needed
 
 // --- UI Initialization ---
