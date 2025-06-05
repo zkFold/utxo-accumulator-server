@@ -71,8 +71,8 @@ initAccumulatorRun cfg@Config {..} = do
 
 addUtxoRun ::
   Config ->
-  GYAddress ->
-  GYAddress ->
+  GYAddress -> -- sender
+  GYAddress -> -- recipient
   ScalarFieldOf BLS12_381_G1_Point ->
   UtxoDistributionTime ->
   IO GYTx
@@ -84,7 +84,7 @@ addUtxoRun cfg@Config {..} sender recipient r distTime = do
 
   -- Build the transaction skeleton
   runBuilderWithConfig cfg sender $ do
-    txSkel <- addUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) recipient r
+    txSkel <- addUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress recipient r
     unsignedTx <$> buildTxBody txSkel
 
 removeUtxoRun :: Config -> Bool -> IO ()
@@ -112,12 +112,11 @@ removeUtxoRun cfg@Config {..} removeNoDate = do
 
         -- Build, sign, and submit the transaction
         runSignerWithConfig cfg $ do
-          txSkel <- removeUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress hs' as' recipient nonce
+          txSkel <- removeUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) hs' as' recipient nonce
           txBody <- buildTxBody txSkel
           submitTxBodyConfirmed_ txBody [cfgPaymentKey]
 
         -- Update the database by removing the UTXO
         putUtxoAccumulatorData cfgDatabasePath $ delete recipient m
-
         -- Repeat until all eligible UTxOs are removed
         removeUtxoRun cfg removeNoDate

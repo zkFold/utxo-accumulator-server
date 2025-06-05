@@ -59,13 +59,14 @@ addUtxo ::
   GYValue ->
   GYTxOutRef ->
   GYTxOutRef ->
-  GYAddress ->
+  GYAddress -> -- server address
+  GYAddress -> -- recipient
   ScalarFieldOf BLS12_381_G1_Point ->
   m (GYTxSkeleton 'PlutusV3)
-addUtxo accumulationValue scriptRef ttRef (addressToPlutus -> recipient) r = do
+addUtxo accumulationValue scriptRef ttRef gyServer recipient r = do
   stateRef <- fromJust <$> getState (threadToken ttRef)
   GYTxOut {gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput stateRef
-  let (dat, redeemer) = mkAddUtxo (fst $ fromJust gyTxOutDatum) recipient r
+  let (dat, redeemer) = mkAddUtxo (fst $ fromJust gyTxOutDatum) (addressToPlutus recipient) r
   addrAcc <- utxoAccumulatorAddress accumulationValue
   return $
     mustHaveInput
@@ -80,19 +81,32 @@ addUtxo accumulationValue scriptRef ttRef (addressToPlutus -> recipient) r = do
           , gyTxOutDatum = Just (dat, GYTxOutUseInlineDatum)
           , gyTxOutRefS = Nothing
           }
+      <> mustHaveOutput
+        GYTxOut
+          { gyTxOutAddress = gyServer
+          , gyTxOutValue = serverFee
+          , gyTxOutDatum = Nothing
+          , gyTxOutRefS = Nothing
+          }
+      <> mustHaveOutput
+        GYTxOut
+          { gyTxOutAddress = protocolTreasuryAddress
+          , gyTxOutValue = protocolFee
+          , gyTxOutDatum = Nothing
+          , gyTxOutRefS = Nothing
+          }
 
 removeUtxo ::
   GYTxQueryMonad m =>
   GYValue ->
   GYTxOutRef ->
   GYTxOutRef ->
-  GYAddress ->
   [ScalarFieldOf BLS12_381_G1_Point] ->
   [ScalarFieldOf BLS12_381_G1_Point] ->
   GYAddress ->
   ScalarFieldOf BLS12_381_G1_Point ->
   m (GYTxSkeleton 'PlutusV3)
-removeUtxo accumulationValue scriptRef ttRef gyServer hs as (addressToPlutus -> recipient) r = do
+removeUtxo accumulationValue scriptRef ttRef hs as (addressToPlutus -> recipient) r = do
   stateRef <- fromJust <$> getState (threadToken ttRef)
   GYTxOut {gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput stateRef
   let (dat, redeemer) = mkRemoveUtxo (fst $ fromJust gyTxOutDatum) hs as recipient r
@@ -115,20 +129,6 @@ removeUtxo accumulationValue scriptRef ttRef gyServer hs as (addressToPlutus -> 
         GYTxOut
           { gyTxOutAddress = addrRecipient
           , gyTxOutValue = accumulationValue
-          , gyTxOutDatum = Nothing
-          , gyTxOutRefS = Nothing
-          }
-      <> mustHaveOutput
-        GYTxOut
-          { gyTxOutAddress = gyServer
-          , gyTxOutValue = serverFee
-          , gyTxOutDatum = Nothing
-          , gyTxOutRefS = Nothing
-          }
-      <> mustHaveOutput
-        GYTxOut
-          { gyTxOutAddress = protocolTreasuryAddress
-          , gyTxOutValue = protocolFee
           , gyTxOutDatum = Nothing
           , gyTxOutRefS = Nothing
           }
