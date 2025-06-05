@@ -25,7 +25,7 @@ parseDistributeOptions =
     <$> parseCommandOptions
     <*> switch
       ( long "remove-no-date"
-      <> help "If set, distribute (remove) UTxOs with no removal date. Default: do not remove UTxOs with no date."
+          <> help "If set, distribute (remove) UTxOs with no removal date. Default: do not remove UTxOs with no date."
       )
 
 parseCommand :: Parser Command

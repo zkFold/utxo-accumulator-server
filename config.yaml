@@ -52,5 +52,5 @@ wallet:
     # Payment address index.
     addrIx: 0
 accumulationValue: 100000000
-maybeScriptRef: 1be56ab98516d0ad4b64a259f7162f6b695ed86d94d2848ac48bb44ba3e8209c#0
-maybeThreadTokenRef: 1be56ab98516d0ad4b64a259f7162f6b695ed86d94d2848ac48bb44ba3e8209c#1
+maybeScriptRef:
+maybeThreadTokenRef:

@@ -23,7 +23,8 @@ type TransactionPrefix = "transaction"
 data Transaction = Transaction
   { txSender :: !GYAddressBech32
   , txRecipient :: !GYAddressBech32
-  , txNonce :: !Natural
+  , txNonceL :: !Natural
+  , txNonceR :: !Natural
   , txDistributionTime :: !(Maybe POSIXTime)
   }
   deriving stock (Show, Eq, Generic)
@@ -44,4 +45,4 @@ handleTransaction ::
   IO GYTx
 handleTransaction cfg Transaction {..} = do
   logInfo cfg "Transaction API requested."
-  addUtxoRun cfg (addressFromBech32 txSender) (addressFromBech32 txRecipient) (fromConstant txNonce) txDistributionTime
+  addUtxoRun cfg (addressFromBech32 txSender) (addressFromBech32 txRecipient) (fromConstant txNonceL) (fromConstant txNonceR) txDistributionTime

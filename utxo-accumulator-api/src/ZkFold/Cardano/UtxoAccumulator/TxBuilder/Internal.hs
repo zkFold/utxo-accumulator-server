@@ -62,11 +62,12 @@ addUtxo ::
   GYAddress -> -- server address
   GYAddress -> -- recipient
   ScalarFieldOf BLS12_381_G1_Point ->
+  ScalarFieldOf BLS12_381_G1_Point ->
   m (GYTxSkeleton 'PlutusV3)
-addUtxo accumulationValue scriptRef ttRef gyServer recipient r = do
+addUtxo accumulationValue scriptRef ttRef gyServer recipient l r = do
   stateRef <- fromJust <$> getState (threadToken ttRef)
   GYTxOut {gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput stateRef
-  let (dat, redeemer) = mkAddUtxo (fst $ fromJust gyTxOutDatum) (addressToPlutus recipient) r
+  let (dat, redeemer) = mkAddUtxo (fst $ fromJust gyTxOutDatum) (addressToPlutus recipient) l r
   addrAcc <- utxoAccumulatorAddress accumulationValue
   return $
     mustHaveInput
@@ -105,11 +106,12 @@ removeUtxo ::
   [ScalarFieldOf BLS12_381_G1_Point] ->
   GYAddress ->
   ScalarFieldOf BLS12_381_G1_Point ->
+  ScalarFieldOf BLS12_381_G1_Point ->
   m (GYTxSkeleton 'PlutusV3)
-removeUtxo accumulationValue scriptRef ttRef hs as (addressToPlutus -> recipient) r = do
+removeUtxo accumulationValue scriptRef ttRef hs as (addressToPlutus -> recipient) l r = do
   stateRef <- fromJust <$> getState (threadToken ttRef)
   GYTxOut {gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput stateRef
-  let (dat, redeemer) = mkRemoveUtxo (fst $ fromJust gyTxOutDatum) hs as recipient r
+  let (dat, redeemer) = mkRemoveUtxo (fst $ fromJust gyTxOutDatum) hs as recipient l r
   addrAcc <- utxoAccumulatorAddress accumulationValue
   addrRecipient <- addressFromPlutus' recipient
   return $

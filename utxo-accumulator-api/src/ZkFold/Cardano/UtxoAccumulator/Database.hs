@@ -11,23 +11,30 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Prelude (readFileJSON, writeFileJSON)
 
+data AccumulatorDataKey = AccumulatorDataKey
+  { adkAddress :: GYAddress
+  , adkNonceL :: ScalarFieldOf BLS12_381_G1_Point
+  }
+  deriving (Show, Eq, Ord, Generic)
+  deriving anyclass (FromJSON, ToJSON)
+
 {- | Optional distribution/removal time for a UTxO
   (Nothing means no scheduled removal)
 -}
 type UtxoDistributionTime = Maybe POSIXTime
 
 {- | Data item for each accumulated UTxO
-  (nonce and optional distribution/removal time)
+  (right nonce and optional distribution/removal time)
 -}
 data AccumulatorDataItem = AccumulatorDataItem
-  { adiNonce :: ScalarFieldOf BLS12_381_G1_Point
+  { adiNonceR :: ScalarFieldOf BLS12_381_G1_Point
   , adiDistributionTime :: UtxoDistributionTime
   }
   deriving (Show, Eq, Generic)
   deriving anyclass (FromJSON, ToJSON)
 
 -- | The accumulator state: address -> data item
-type AccumulatorData = Map GYAddress AccumulatorDataItem
+type AccumulatorData = Map AccumulatorDataKey AccumulatorDataItem
 
 removeUtxoAccumulatorData :: FilePath -> IO ()
 removeUtxoAccumulatorData fp = do

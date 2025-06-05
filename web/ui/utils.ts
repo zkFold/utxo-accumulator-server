@@ -40,3 +40,10 @@ export function hexToBytes(hex: string): Uint8Array {
 export function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
+
+// Generate a random BLS scalar in hex format
+export function randomBlsScalarHex() {
+  const arr = new Uint8Array(28); // 224 bits
+  window.crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+}

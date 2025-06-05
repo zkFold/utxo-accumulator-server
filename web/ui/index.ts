@@ -1,6 +1,6 @@
 import { wallets, getWalletApi, getWalletAnyAddress, hexToBech32, signAndSubmitTxWithWallet, WalletApi, WalletInfo } from './wallet';
 import { serverBases, fetchAllServerSettings, sendTransaction, serverSettings, txEndpoint } from './api';
-import { parseAccumulationValue, setResultMessage, clearResultMessage, isValidPreprodBech32Address } from './utils';
+import { parseAccumulationValue, setResultMessage, clearResultMessage, isValidPreprodBech32Address, randomBlsScalarHex } from './utils';
 import { walletSelect, serverSelect, amountSelect, addressInputGrid, fillAddrBtn, sendBtn, resultDivGrid, title, initUILayout, removalTimeSelect } from './ui';
 
 // Set up the UI layout and structure
@@ -119,10 +119,13 @@ sendBtn.onclick = async () => {
   if (removalSeconds > 0) {
     tx_distribution_time = Math.floor(Date.now() / 1000) + removalSeconds;
   }
+  const nonceL = randomBlsScalarHex();
+  const nonceR = randomBlsScalarHex();
   const body = {
     tx_sender: senderAddress,
     tx_recipient: address,
-    tx_nonce: amount,
+    tx_nonce_l: nonceL,
+    tx_nonce_r: nonceR,
     tx_distribution_time: tx_distribution_time === null ? null : tx_distribution_time
   };
   try {

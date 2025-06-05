@@ -3,18 +3,24 @@ module ZkFold.Cardano.UtxoAccumulator.Server.Config (
   serverConfigOptionalFPIO,
   coreConfigFromServerConfig,
   signingKeysFromServerWallet,
+  updateConfigYaml,
 ) where
 
 import Data.Aeson (
+  Value (..),
   eitherDecodeFileStrict,
   eitherDecodeStrict,
  )
+import Data.Aeson.KeyMap qualified as KeyMap
 import Data.Bifunctor (Bifunctor (..))
+import Data.ByteString qualified as B
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (fromMaybe)
 import Data.String (IsString (..))
+import Data.Text qualified as T
 import Data.Word (Word32)
 import Data.Yaml qualified as Yaml
+import Data.Yaml.Pretty qualified as YamlPretty
 import Deriving.Aeson
 import GeniusYield.GYConfig (Confidential, GYCoreConfig (..), GYCoreProviderInfo)
 import GeniusYield.Imports (Text, throwIO, (&))
@@ -22,6 +28,7 @@ import GeniusYield.Types hiding (Port)
 import Network.Wai.Handler.Warp (Port)
 import System.Envy
 import System.FilePath (takeExtension)
+import System.IO (IOMode (..), withFile)
 
 {- $setup
 
@@ -131,3 +138,18 @@ signingKeysFromServerWallet nid (KeyPathWallet fp) = do
             AGYStakeSigningKey skey' -> stakeKeyHash . stakeVerificationKey $ skey'
             AGYExtendedStakeSigningKey skey' -> getExtendedVerificationKey skey' & extendedVerificationKeyHash
      in addressFromCredential nid (GYPaymentCredentialByKey pkh) (Just $ GYStakeCredentialByKey skh)
+
+-- | Update config.yaml with new maybeScriptRef and maybeThreadTokenRef values.
+updateConfigYaml :: FilePath -> Maybe GYTxOutRef -> Maybe GYTxOutRef -> IO ()
+updateConfigYaml configPath mScriptRef mThreadTokenRef = do
+  mVal <-
+    Yaml.decodeFileEither configPath >>= \case
+      Left _ -> return Nothing
+      Right v -> return (Just v)
+  let updateField k = maybe id (KeyMap.insert k . String . T.pack . show)
+      obj = fromMaybe KeyMap.empty mVal
+      newObj =
+        updateField "maybeScriptRef" mScriptRef $
+          updateField "maybeThreadTokenRef" mThreadTokenRef obj
+  withFile configPath WriteMode $ \h ->
+    B.hPut h (YamlPretty.encodePretty YamlPretty.defConfig newObj)

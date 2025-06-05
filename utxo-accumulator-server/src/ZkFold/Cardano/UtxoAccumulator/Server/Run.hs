@@ -26,7 +26,7 @@ import Servant.Server.Internal.ServerError (responseServerError)
 import System.TimeManager (TimeoutThread (..))
 import ZkFold.Cardano.UtxoAccumulator.Server.Api
 import ZkFold.Cardano.UtxoAccumulator.Server.Auth
-import ZkFold.Cardano.UtxoAccumulator.Server.Config (ServerConfig (..), coreConfigFromServerConfig, serverConfigOptionalFPIO, signingKeysFromServerWallet)
+import ZkFold.Cardano.UtxoAccumulator.Server.Config (ServerConfig (..), coreConfigFromServerConfig, serverConfigOptionalFPIO, signingKeysFromServerWallet, updateConfigYaml)
 import ZkFold.Cardano.UtxoAccumulator.Server.ErrorMiddleware
 import ZkFold.Cardano.UtxoAccumulator.Server.RequestLoggerMiddleware (gcpReqLogger)
 import ZkFold.Cardano.UtxoAccumulator.Server.Utils
@@ -92,8 +92,6 @@ runServer mfp mode = do
           postScriptRun cfg
         else return cfg
 
-    B.writeFile "maybeScriptRef.yaml" (Yaml.encodePretty Yaml.defConfig $ cfgMaybeScriptRef cfg')
-
     -- Checking if the accumulator is initialized
     cfg'' <-
       if isNothing scMaybeThreadTokenRef
@@ -102,7 +100,8 @@ runServer mfp mode = do
           initAccumulatorRun cfg'
         else return cfg'
 
-    B.writeFile "maybeThreadTokenRef.yaml" (Yaml.encodePretty Yaml.defConfig $ cfgMaybeThreadTokenRef cfg'')
+    -- Update config.yaml with maybeScriptRef and maybeThreadTokenRef values
+    updateConfigYaml "config.yaml" (cfgMaybeScriptRef cfg') (cfgMaybeThreadTokenRef cfg'')
 
     case mode of
       ModeAccumulate -> do

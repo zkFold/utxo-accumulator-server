@@ -8,12 +8,10 @@ import Network.HTTP.Simple
 
 import Codec.Serialise (deserialise)
 import Data.Aeson.Types (Parser)
-import Data.Bool (bool)
 import Data.ByteString (fromStrict)
 import Data.ByteString.Base16 qualified as B16
 import Data.ByteString.Char8 qualified as BSC
 import Data.Either (partitionEithers)
-import Data.Map (Map, filterWithKey, findMin)
 import Data.Maybe (fromJust)
 import Data.Vector qualified as V
 import GeniusYield.Providers (utxoFromMaestro)
@@ -98,12 +96,7 @@ fullSync cfg ref = do
     foldl
       ( \(hs, as) redeemer -> case redeemer of
           AddUtxo h _ -> (hs ++ [toZp h], as)
-          RemoveUtxo addr _ _ -> (hs, toZp (byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData addr) : as)
+          RemoveUtxo addr l _ _ -> (hs, toZp (byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData (addr, l)) : as)
       )
       ([], [])
       redeemers
-
-findUnusedTransactionData :: Map GYAddress (ScalarFieldOf BLS12_381_G1_Point) -> [ScalarFieldOf BLS12_381_G1_Point] -> Maybe (GYAddress, ScalarFieldOf BLS12_381_G1_Point)
-findUnusedTransactionData m as =
-  let m' = filterWithKey (\k _ -> toZp (byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData $ addressToPlutus k) `notElem` as) m
-   in bool Nothing (Just $ findMin m') (not $ null m')

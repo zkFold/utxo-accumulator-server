@@ -12,7 +12,7 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Field (toZp)
 import ZkFold.Cardano.UtxoAccumulator.Constants (threadToken)
-import ZkFold.Cardano.UtxoAccumulator.Database (AccumulatorDataItem (..), UtxoDistributionTime, getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
+import ZkFold.Cardano.UtxoAccumulator.Database (AccumulatorDataItem (..), AccumulatorDataKey (AccumulatorDataKey), UtxoDistributionTime, getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
 import ZkFold.Cardano.UtxoAccumulator.Sync (fullSync)
 import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper)
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (addUtxo, initAccumulator, postScript, removeUtxo)
@@ -74,17 +74,19 @@ addUtxoRun ::
   GYAddress -> -- sender
   GYAddress -> -- recipient
   ScalarFieldOf BLS12_381_G1_Point ->
+  ScalarFieldOf BLS12_381_G1_Point ->
   UtxoDistributionTime ->
   IO GYTx
-addUtxoRun cfg@Config {..} sender recipient r distTime = do
+addUtxoRun cfg@Config {..} sender recipient l r distTime = do
   -- Update the UTXO accumulator data
   m <- getUtxoAccumulatorData cfgDatabasePath
-  let item = AccumulatorDataItem r distTime
-  putUtxoAccumulatorData cfgDatabasePath $ insert recipient item m
+  let key = AccumulatorDataKey recipient l
+      item = AccumulatorDataItem r distTime
+  putUtxoAccumulatorData cfgDatabasePath $ insert key item m
 
   -- Build the transaction skeleton
   runBuilderWithConfig cfg sender $ do
-    txSkel <- addUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress recipient r
+    txSkel <- addUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress recipient l r
     unsignedTx <$> buildTxBody txSkel
 
 removeUtxoRun :: Config -> Bool -> IO ()
@@ -98,25 +100,25 @@ removeUtxoRun cfg@Config {..} removeNoDate = do
 
     -- Find UTxOs eligible for removal
     let eligible =
-          [ (recipient, nonce)
-          | (recipient, AccumulatorDataItem nonce mDistTime) <- toList m
+          [ (recipient, l, r)
+          | (AccumulatorDataKey recipient l, AccumulatorDataItem r mDistTime) <- toList m
           , maybe removeNoDate (<= now) mDistTime
           , toZp (byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData $ addressToPlutus recipient) `notElem` as
           ]
     case eligible of
       [] -> return () -- No eligible UTxOs to remove at this time
-      ((recipient, nonce) : _) -> do
+      ((recipient, l, r) : _) -> do
         let (hs', as') = case cfgMaestroToken of
-              "" -> ([utxoAccumulatorHashWrapper (addressToPlutus recipient) nonce], [])
+              "" -> ([utxoAccumulatorHashWrapper (addressToPlutus recipient) l r], [])
               _ -> (hs, as)
 
         -- Build, sign, and submit the transaction
         runSignerWithConfig cfg $ do
-          txSkel <- removeUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) hs' as' recipient nonce
+          txSkel <- removeUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) hs' as' recipient l r
           txBody <- buildTxBody txSkel
           submitTxBodyConfirmed_ txBody [cfgPaymentKey]
 
         -- Update the database by removing the UTXO
-        putUtxoAccumulatorData cfgDatabasePath $ delete recipient m
+        putUtxoAccumulatorData cfgDatabasePath $ delete (AccumulatorDataKey recipient l) m
         -- Repeat until all eligible UTxOs are removed
         removeUtxoRun cfg removeNoDate

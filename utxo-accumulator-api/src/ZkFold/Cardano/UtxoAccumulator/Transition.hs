@@ -32,21 +32,32 @@ import ZkFold.Symbolic.Examples.UtxoAccumulator (
   utxoAccumulatorProve,
  )
 
-utxoAccumulatorHashWrapper :: Address -> ScalarFieldOf BLS12_381_G1_Point -> ScalarFieldOf BLS12_381_G1_Point
-utxoAccumulatorHashWrapper addr r =
-  let a = toZp $ byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData addr
+utxoAccumulatorHashWrapper ::
+  Address ->
+  ScalarFieldOf BLS12_381_G1_Point ->
+  ScalarFieldOf BLS12_381_G1_Point ->
+  ScalarFieldOf BLS12_381_G1_Point
+utxoAccumulatorHashWrapper addr l r =
+  let a =
+        toZp
+          $ byteStringToInteger BigEndian
+          $ blake2b_224
+          $ serialiseData
+          $ toBuiltinData
+            (addr, convertZp l)
    in utxoAccumulatorHash a r
 
 mkAddUtxo ::
   GYDatum ->
   Address ->
   ScalarFieldOf BLS12_381_G1_Point ->
+  ScalarFieldOf BLS12_381_G1_Point ->
   (GYDatum, GYRedeemer)
-mkAddUtxo dat addr r =
+mkAddUtxo dat addr l r =
   let Datum d = datumToPlutus dat
       (UtxoAccumulatorDatum {..}, datumRemove, setup) = unsafeFromBuiltinData d :: (UtxoAccumulatorDatum, UtxoAccumulatorDatum, SetupBytes)
 
-      h = convertZp $ utxoAccumulatorHashWrapper addr r
+      h = convertZp $ utxoAccumulatorHashWrapper addr l r
 
       d' = addDatumFromHash nextDatumHash
       setup' = updateSetupBytes setup h $ fromJust maybeCurrentGroupElement
@@ -59,12 +70,18 @@ mkRemoveUtxo ::
   [ScalarFieldOf BLS12_381_G1_Point] ->
   Address ->
   ScalarFieldOf BLS12_381_G1_Point ->
+  ScalarFieldOf BLS12_381_G1_Point ->
   (GYDatum, GYRedeemer)
-mkRemoveUtxo dat hs as addr r =
+mkRemoveUtxo dat hs as addr l r =
   let Datum d = datumToPlutus dat
       (datumAdd, UtxoAccumulatorDatum {..}, setup) = unsafeFromBuiltinData d :: (UtxoAccumulatorDatum, UtxoAccumulatorDatum, SetupBytes)
 
-      a' = byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData addr
+      a' =
+        byteStringToInteger BigEndian
+          $ blake2b_224
+          $ serialiseData
+          $ toBuiltinData
+            (addr, convertZp l)
       a = toZp a'
 
       n = value @N
@@ -76,4 +93,4 @@ mkRemoveUtxo dat hs as addr r =
       d' = removeDatumFromHash nextDatumHash
       setup' = updateSetupBytes setup a' $ fromJust maybeCurrentGroupElement
       dat' = datumFromPlutusData $ toBuiltinData (datumAdd, d', setup')
-   in (dat', redeemerFromPlutusData $ RemoveUtxo addr (mkProof proof) d')
+   in (dat', redeemerFromPlutusData $ RemoveUtxo addr (convertZp l) (mkProof proof) d')

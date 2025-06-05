@@ -78,9 +78,10 @@ utxoAccumulatorTests setup =
           -- Adding funds to the accumulator
           let sender = userAddr user1
               recipient = userAddr user2
+              l = toZp 21
               r = toZp 42
           -- Default: no scheduled removal
-          tx <- addUtxoRun cfg'' sender recipient r Nothing
+          tx <- addUtxoRun cfg'' sender recipient l r Nothing
 
           -- User signs and submits the transaction
           runSignerWithConfig
