@@ -12,7 +12,7 @@ import ZkFold.Cardano.OnChain.Plonkup.Data (SetupBytes)
 import ZkFold.Cardano.UPLC.Common (parkingSpotCompiled)
 import ZkFold.Cardano.UPLC.UtxoAccumulator (UtxoAccumulatorParameters, utxoAccumulatorCompiled)
 import ZkFold.Cardano.UtxoAccumulator.Datum (addDatums, removeDatums)
-import ZkFold.Symbolic.Examples.UtxoAccumulator (utxoAccumulatorVerifierSetup)
+import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS, utxoAccumulatorVerifierSetup)
 import Prelude (Integer, Maybe (..), ($), (.))
 
 -- Thread token
@@ -64,6 +64,9 @@ protocolStakingCredential =
 type N = 10
 type M = 1024
 
+-- type N = 1024
+-- type M = 16384
+
 utxoAccumulatorParameters :: GYValue -> UtxoAccumulatorParameters
 utxoAccumulatorParameters = valueToPlutus
 
@@ -82,12 +85,12 @@ utxoAccumulatorAddress v =
           , addressStakingCredential = Just protocolStakingCredential
           }
 
-utxoAccumulatorSetupBytesInit :: SetupBytes
-utxoAccumulatorSetupBytesInit = mkSetup $ utxoAccumulatorVerifierSetup @N @M
+utxoAccumulatorSetupBytesInit :: UtxoAccumulatorCRS -> SetupBytes
+utxoAccumulatorSetupBytesInit = mkSetup . utxoAccumulatorVerifierSetup @N @M
 
-utxoAccumulatorDatumInit :: GYDatum
-utxoAccumulatorDatumInit =
+utxoAccumulatorDatumInit :: UtxoAccumulatorCRS -> GYDatum
+utxoAccumulatorDatumInit crs =
   let addDatum = head addDatums
       removeDatum = head removeDatums
-      setup = utxoAccumulatorSetupBytesInit
+      setup = utxoAccumulatorSetupBytesInit crs
    in datumFromPlutusData $ toBuiltinData (addDatum, removeDatum, setup)

@@ -13,6 +13,8 @@ import ZkFold.Algebra.Field (toZp)
 import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, utxoAccumulatorAddress, utxoAccumulatorScript)
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder
 import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
+import ZkFold.Prelude (readFileJSON)
+import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS (..))
 
 fundingRun :: User -> GYAddress -> GYValue -> Ctx -> IO ()
 fundingRun treasury serverAddr serverFunds ctx = ctxRun ctx treasury $ do
@@ -55,6 +57,10 @@ utxoAccumulatorTests setup =
           -- writeFileJSON "utxo-accumulator-api/accumulation-group-elements.json" (accumulationGroupElements @N @M)
           -- writeFileJSON "utxo-accumulator-api/distribution-group-elements.json" (distributionGroupElements @N @M)
 
+          g1Data <- readFileJSON "utxo-accumulator-api/test/data/bls12381-g1_n65541.json"
+          g2Data <- readFileJSON "utxo-accumulator-api/test/data/bls12381-g2_n1.json"
+          let crs = UtxoAccumulatorCRS g1Data g2Data
+
           info $ "Protocol script size: " <> show (scriptSize $ GYPlutusScript $ utxoAccumulatorScript (cfgAccumulationValue cfg))
           ctxRunQuery ctx (utxoAccumulatorAddress (cfgAccumulationValue cfg))
             >>= info . ("Protocol script address: " <>) . show
@@ -71,7 +77,7 @@ utxoAccumulatorTests setup =
             >>= info . ("Posted accumulator script. Server's utxos: " <>) . show
 
           -- Initializing the accumulator
-          cfg'' <- initAccumulatorRun cfg'
+          cfg'' <- initAccumulatorRun crs cfg'
           ctxRunQuery ctx (utxosAtAddress serverAddr Nothing)
             >>= info . ("Initialized accumulator. Server's utxos: " <>) . show
 
@@ -96,7 +102,7 @@ utxoAccumulatorTests setup =
             >>= info . ("Added a utxo to accumulator. Server's utxos: " <>) . show
 
           -- Removing funds from the accumulator
-          removeUtxoRun cfg'' True
+          removeUtxoRun crs cfg'' True
           ctxRunQuery ctx (utxosAtAddress serverAddr Nothing)
             >>= info . ("Removed a utxo from accumulator. Server's utxos: " <>) . show
 

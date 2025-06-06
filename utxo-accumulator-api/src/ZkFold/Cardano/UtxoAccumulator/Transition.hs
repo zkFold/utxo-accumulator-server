@@ -28,6 +28,7 @@ import ZkFold.Cardano.UtxoAccumulator.Constants (M, N)
 import ZkFold.Cardano.UtxoAccumulator.Datum (addDatumFromHash, removeDatumFromHash)
 import ZkFold.Prelude (length, replicate)
 import ZkFold.Symbolic.Examples.UtxoAccumulator (
+  UtxoAccumulatorCRS,
   utxoAccumulatorHash,
   utxoAccumulatorProve,
  )
@@ -65,6 +66,7 @@ mkAddUtxo dat addr l r =
    in (dat', redeemerFromPlutusData $ AddUtxo h d')
 
 mkRemoveUtxo ::
+  UtxoAccumulatorCRS ->
   GYDatum ->
   [ScalarFieldOf BLS12_381_G1_Point] ->
   [ScalarFieldOf BLS12_381_G1_Point] ->
@@ -72,7 +74,7 @@ mkRemoveUtxo ::
   ScalarFieldOf BLS12_381_G1_Point ->
   ScalarFieldOf BLS12_381_G1_Point ->
   (GYDatum, GYRedeemer)
-mkRemoveUtxo dat hs as addr l r =
+mkRemoveUtxo crs dat hs as addr l r =
   let Datum d = datumToPlutus dat
       (datumAdd, UtxoAccumulatorDatum {..}, setup) = unsafeFromBuiltinData d :: (UtxoAccumulatorDatum, UtxoAccumulatorDatum, SetupBytes)
 
@@ -88,7 +90,7 @@ mkRemoveUtxo dat hs as addr l r =
       hs' = hs ++ replicate (n -! length hs) zero
       as' = as ++ replicate (n -! length as) zero
 
-      (_, proof) = utxoAccumulatorProve @N @M hs' as' a r
+      (_, proof) = utxoAccumulatorProve @N @M crs hs' as' a r
 
       d' = removeDatumFromHash nextDatumHash
       setup' = updateSetupBytes setup a' $ fromJust maybeCurrentGroupElement

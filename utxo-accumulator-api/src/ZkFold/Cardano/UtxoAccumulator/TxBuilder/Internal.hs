@@ -13,6 +13,7 @@ import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Cardano.UtxoAccumulator.Constants
 import ZkFold.Cardano.UtxoAccumulator.Transition (mkAddUtxo, mkRemoveUtxo)
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils (getOutput, getState)
+import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS)
 
 postScript ::
   GYTxQueryMonad m =>
@@ -31,10 +32,11 @@ postScript accumulationValue = do
 
 initAccumulator ::
   GYTxQueryMonad m =>
+  UtxoAccumulatorCRS ->
   GYAddress ->
   GYValue ->
   m (GYTxSkeleton 'PlutusV2, GYTxOutRef)
-initAccumulator serverAddr accumulationValue = do
+initAccumulator crs serverAddr accumulationValue = do
   ref <- head <$> utxoRefsAtAddress serverAddr
   let t = valueSingleton (threadToken ref) 1
   accAddr <- utxoAccumulatorAddress accumulationValue
@@ -50,7 +52,7 @@ initAccumulator serverAddr accumulationValue = do
           GYTxOut
             { gyTxOutAddress = accAddr
             , gyTxOutValue = t
-            , gyTxOutDatum = Just (utxoAccumulatorDatumInit, GYTxOutUseInlineDatum)
+            , gyTxOutDatum = Just (utxoAccumulatorDatumInit crs, GYTxOutUseInlineDatum)
             , gyTxOutRefS = Nothing
             }
 
@@ -99,6 +101,7 @@ addUtxo accumulationValue scriptRef ttRef gyServer recipient l r = do
 
 removeUtxo ::
   GYTxQueryMonad m =>
+  UtxoAccumulatorCRS ->
   GYValue ->
   GYTxOutRef ->
   GYTxOutRef ->
@@ -108,10 +111,10 @@ removeUtxo ::
   ScalarFieldOf BLS12_381_G1_Point ->
   ScalarFieldOf BLS12_381_G1_Point ->
   m (GYTxSkeleton 'PlutusV3)
-removeUtxo accumulationValue scriptRef ttRef hs as (addressToPlutus -> recipient) l r = do
+removeUtxo crs accumulationValue scriptRef ttRef hs as (addressToPlutus -> recipient) l r = do
   stateRef <- fromJust <$> getState (threadToken ttRef)
   GYTxOut {gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput stateRef
-  let (dat, redeemer) = mkRemoveUtxo (fst $ fromJust gyTxOutDatum) hs as recipient l r
+  let (dat, redeemer) = mkRemoveUtxo crs (fst $ fromJust gyTxOutDatum) hs as recipient l r
   addrAcc <- utxoAccumulatorAddress accumulationValue
   addrRecipient <- addressFromPlutus' recipient
   return $

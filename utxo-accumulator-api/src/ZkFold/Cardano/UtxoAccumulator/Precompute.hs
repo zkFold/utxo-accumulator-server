@@ -9,7 +9,7 @@ import Data.Maybe (fromJust)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 
 accumulationGroupElements :: [BLS12_381_G1_Point]
-accumulationGroupElements = fromJust $ decode $ fromStrict $(embedFileRelative "accumulation-group-elements.json")
+accumulationGroupElements = fromJust $ decode $ fromStrict $(embedFileRelative "data/accumulation-group-elements.json")
 
 distributionGroupElements :: [BLS12_381_G1_Point]
-distributionGroupElements = fromJust $ decode $ fromStrict $(embedFileRelative "distribution-group-elements.json")
+distributionGroupElements = fromJust $ decode $ fromStrict $(embedFileRelative "data/distribution-group-elements.json")

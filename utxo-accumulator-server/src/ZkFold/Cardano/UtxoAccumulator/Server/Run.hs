@@ -32,6 +32,8 @@ import ZkFold.Cardano.UtxoAccumulator.Server.RequestLoggerMiddleware (gcpReqLogg
 import ZkFold.Cardano.UtxoAccumulator.Server.Utils
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder (initAccumulatorRun, postScriptRun, removeUtxoRun)
 import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
+import ZkFold.Prelude (readFileJSON)
+import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS (..))
 
 data Mode = ModeAccumulate | ModeDistribute Bool
   deriving (Eq, Show)
@@ -84,6 +86,10 @@ runServer mfp mode = do
           , cfgMaybeThreadTokenRef = scMaybeThreadTokenRef
           }
 
+    g1Data <- readFileJSON "utxo-accumulator-api/test/data/bls12381-g1_n65541.json"
+    g2Data <- readFileJSON "utxo-accumulator-api/test/data/bls12381-g2_n1.json"
+    let crs = UtxoAccumulatorCRS g1Data g2Data
+
     -- Checking if the script is posted
     cfg' <-
       if isNothing scMaybeScriptRef
@@ -97,7 +103,7 @@ runServer mfp mode = do
       if isNothing scMaybeThreadTokenRef
         then do
           logInfoS "Initializing the UTxO Accumulator..."
-          initAccumulatorRun cfg'
+          initAccumulatorRun crs cfg'
         else return cfg'
 
     -- Update config.yaml with maybeScriptRef and maybeThreadTokenRef values
@@ -125,4 +131,4 @@ runServer mfp mode = do
                     (\ioAct -> Handler . ExceptT $ first (apiErrorToServerError . exceptionHandler) <$> try ioAct)
                   $ mainServer cfg''
       ModeDistribute removeNoDate ->
-        removeUtxoRun cfg'' removeNoDate
+        removeUtxoRun crs cfg'' removeNoDate

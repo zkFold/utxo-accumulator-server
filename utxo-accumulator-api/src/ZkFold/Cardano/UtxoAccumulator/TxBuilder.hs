@@ -18,6 +18,7 @@ import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper)
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (addUtxo, initAccumulator, postScript, removeUtxo)
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils (getState)
 import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
+import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS)
 
 runQueryWithConfig :: Config -> GYTxQueryMonadIO a -> IO a
 runQueryWithConfig cfg =
@@ -59,12 +60,13 @@ postScriptRun cfg@Config {..} = do
   return $ cfg {cfgMaybeScriptRef = Just $ txOutRefFromTuple (txId, 0)}
 
 initAccumulatorRun ::
+  UtxoAccumulatorCRS ->
   Config ->
   IO Config
-initAccumulatorRun cfg@Config {..} = do
+initAccumulatorRun crs cfg@Config {..} = do
   removeUtxoAccumulatorData cfgDatabasePath
   runSignerWithConfig cfg $ do
-    (txSkel, ref) <- initAccumulator cfgAddress cfgAccumulationValue
+    (txSkel, ref) <- initAccumulator crs cfgAddress cfgAccumulationValue
     txBody <- buildTxBody txSkel
     submitTxBodyConfirmed_ txBody [cfgPaymentKey]
     return $ cfg {cfgMaybeThreadTokenRef = Just ref}
@@ -89,8 +91,8 @@ addUtxoRun cfg@Config {..} sender recipient l r distTime = do
     txSkel <- addUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress recipient l r
     unsignedTx <$> buildTxBody txSkel
 
-removeUtxoRun :: Config -> Bool -> IO ()
-removeUtxoRun cfg@Config {..} removeNoDate = do
+removeUtxoRun :: UtxoAccumulatorCRS -> Config -> Bool -> IO ()
+removeUtxoRun crs cfg@Config {..} removeNoDate = do
   -- Get the UTXO accumulator data
   m <- getUtxoAccumulatorData cfgDatabasePath
   unless (null m) $ do
@@ -114,11 +116,11 @@ removeUtxoRun cfg@Config {..} removeNoDate = do
 
         -- Build, sign, and submit the transaction
         runSignerWithConfig cfg $ do
-          txSkel <- removeUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) hs' as' recipient l r
+          txSkel <- removeUtxo crs cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) hs' as' recipient l r
           txBody <- buildTxBody txSkel
           submitTxBodyConfirmed_ txBody [cfgPaymentKey]
 
         -- Update the database by removing the UTXO
         putUtxoAccumulatorData cfgDatabasePath $ delete (AccumulatorDataKey recipient l) m
         -- Repeat until all eligible UTxOs are removed
-        removeUtxoRun cfg removeNoDate
+        removeUtxoRun crs cfg removeNoDate
