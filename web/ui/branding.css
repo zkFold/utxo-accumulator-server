@@ -54,7 +54,7 @@ button:hover {
   font-family: var(--font-family, 'Segoe UI', Arial, sans-serif);
   font-size: 1.2em;
   color: var(--subtitle-color, #888);
-  margin-top: 0.2em;
+  margin-top: -1.2em;
   font-weight: 400;
 }
 input, select {
@@ -69,6 +69,9 @@ input, select {
   box-shadow: var(--input-box-shadow, 0 2px 8px 0 #0001);
   transition: border-color 0.2s, box-shadow 0.2s;
   outline: none;
+}
+input[type="text"] {
+  font-size: 0.9em;
 }
 input:focus, select:focus {
   border-color: var(--primary-color, #444);
@@ -106,4 +109,17 @@ select:focus {
   outline: none;
   border-color: var(--primary-color, #444);
   box-shadow: 0 0 0 2px #8882;
+}
+.app-network-label {
+  margin-left: 0.7em;
+  font-size: 0.7em;
+  font-weight: 400;
+  color: var(--subtitle-color, #888);
+  white-space: nowrap;
+  align-self: center; /* ensure it aligns with the title */
+}
+.app-title-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center; /* changed from baseline to center for better vertical alignment */
 }

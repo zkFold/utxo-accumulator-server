@@ -44,7 +44,7 @@ export const addressInputGrid = document.createElement('input');
 addressInputGrid.type = 'text';
 addressInputGrid.id = 'address';
 addressInputGrid.name = 'address';
-addressInputGrid.style.width = '750px';
+addressInputGrid.style.width = '825px';
 addressInputGrid.placeholder = 'addr_test1abcdefghijklmnopqrstuvwxyz...';
 
 export const fillAddrBtn = document.createElement('button');
@@ -66,7 +66,7 @@ resultDivGrid.style.overflowWrap = 'break-word';
 // --- HEADER CREATION ---
 export const logo = document.createElement('img');
 logo.src = BRANDING.logoUrl;
-logo.alt = 'Logo';
+logo.alt = BRANDING.logoAlt || 'Logo';
 logo.className = 'app-logo';
 logo.style.height = '48px';
 logo.style.width = '48px';
@@ -79,11 +79,28 @@ header.style.display = 'flex';
 header.style.alignItems = 'center';
 header.style.gap = '1.2em';
 
+const networkLabel = document.createElement('span');
+networkLabel.className = 'app-network-label';
+networkLabel.textContent = BRANDING.networkName || 'Preprod';
+
 const titleBlock = document.createElement('div');
-titleBlock.style.display = 'flex';
-titleBlock.style.flexDirection = 'column';
-titleBlock.appendChild(title);
+titleBlock.className = 'app-title-block';
+
+const titleRow = document.createElement('div');
+titleRow.className = 'app-title-row'; // Use a class for CSS control
+
+titleRow.appendChild(title);
+titleRow.appendChild(networkLabel);
+
+titleBlock.appendChild(titleRow);
 titleBlock.appendChild(subtitle);
+
+// Network label (e.g., 'Preprod') next to the title
+networkLabel.style.marginLeft = '1em';
+networkLabel.style.fontSize = '0.7em';
+networkLabel.style.fontWeight = '400';
+networkLabel.style.color = 'var(--subtitle-color, #888)';
+networkLabel.style.whiteSpace = 'nowrap';
 
 header.appendChild(logo);
 header.appendChild(titleBlock);

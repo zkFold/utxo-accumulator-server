@@ -4,6 +4,7 @@ export default {
   plugins: [wasm()],
   root: '.',
   build: {
-    outDir: 'dist'
+    outDir: 'dist',
+    target: 'esnext'
   }
 };

@@ -10,6 +10,8 @@ export const BRANDING = {
   },
   // Logo (set to empty string for no logo)
   logoUrl: "logo.svg",
+  logoAlt: "UTxO Accumulator Logo",
+  networkName: "Preprod",
   // Main style variables
   styles: {
     primaryColor: "#222", // dark for text and buttons
