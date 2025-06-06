@@ -78,7 +78,6 @@ library
     servant-server,
     swagger2,
     symbolic-base,
-    symbolic-examples,
     text,
     time,
     time-manager,

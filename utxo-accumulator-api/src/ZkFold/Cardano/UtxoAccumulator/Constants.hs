@@ -12,8 +12,9 @@ import ZkFold.Cardano.OnChain.Plonkup.Data (SetupBytes)
 import ZkFold.Cardano.UPLC.Common (parkingSpotCompiled)
 import ZkFold.Cardano.UPLC.UtxoAccumulator (UtxoAccumulatorParameters, utxoAccumulatorCompiled)
 import ZkFold.Cardano.UtxoAccumulator.Datum (addDatums, removeDatums)
-import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS, utxoAccumulatorVerifierSetup)
-import Prelude (Integer, Maybe (..), ($), (.))
+import ZkFold.Prelude (readFileJSON)
+import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS (..), utxoAccumulatorVerifierSetup)
+import Prelude (IO, Integer, Maybe (..), return, ($), (.), (<$>))
 
 -- Thread token
 
@@ -84,6 +85,12 @@ utxoAccumulatorAddress v =
           { addressCredential = ScriptCredential sh
           , addressStakingCredential = Just protocolStakingCredential
           }
+
+utxoAccumulatorCRS :: IO UtxoAccumulatorCRS
+utxoAccumulatorCRS = do
+  g1Data <- readFileJSON "utxo-accumulator-api/data/bls12381-g1_n65541.json"
+  g2Data <- head <$> readFileJSON "utxo-accumulator-api/data/bls12381-g2_n1.json"
+  return $ UtxoAccumulatorCRS g1Data g2Data
 
 utxoAccumulatorSetupBytesInit :: UtxoAccumulatorCRS -> SetupBytes
 utxoAccumulatorSetupBytesInit = mkSetup . utxoAccumulatorVerifierSetup @N @M

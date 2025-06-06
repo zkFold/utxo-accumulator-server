@@ -10,11 +10,9 @@ import GeniusYield.Types
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCaseSteps)
 import ZkFold.Algebra.Field (toZp)
-import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, utxoAccumulatorAddress, utxoAccumulatorScript)
+import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, utxoAccumulatorAddress, utxoAccumulatorCRS, utxoAccumulatorScript)
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder
 import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
-import ZkFold.Prelude (readFileJSON)
-import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS (..))
 
 fundingRun :: User -> GYAddress -> GYValue -> Ctx -> IO ()
 fundingRun treasury serverAddr serverFunds ctx = ctxRun ctx treasury $ do
@@ -54,12 +52,7 @@ utxoAccumulatorTests setup =
                   , cfgMaybeThreadTokenRef = Nothing
                   }
 
-          -- writeFileJSON "utxo-accumulator-api/accumulation-group-elements.json" (accumulationGroupElements @N @M)
-          -- writeFileJSON "utxo-accumulator-api/distribution-group-elements.json" (distributionGroupElements @N @M)
-
-          g1Data <- readFileJSON "utxo-accumulator-api/test/data/bls12381-g1_n65541.json"
-          g2Data <- readFileJSON "utxo-accumulator-api/test/data/bls12381-g2_n1.json"
-          let crs = UtxoAccumulatorCRS g1Data g2Data
+          crs <- utxoAccumulatorCRS
 
           info $ "Protocol script size: " <> show (scriptSize $ GYPlutusScript $ utxoAccumulatorScript (cfgAccumulationValue cfg))
           ctxRunQuery ctx (utxoAccumulatorAddress (cfgAccumulationValue cfg))

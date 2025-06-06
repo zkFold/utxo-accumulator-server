@@ -88,12 +88,20 @@ test-suite utxo-accumulator-api-tests
   main-is: Main.hs
   other-modules:
     ZkFold.Cardano.UtxoAccumulator.Test
-
   build-depends:
     atlas-cardano,
     base,
     symbolic-base,
-    symbolic-examples,
     tasty,
     tasty-hunit,
+    utxo-accumulator-api,
+
+executable precompute
+  import: common
+  main-is: Main.hs
+  hs-source-dirs: precompute
+  build-depends:
+    base,
+    symbolic-base,
+    symbolic-examples,
     utxo-accumulator-api,
