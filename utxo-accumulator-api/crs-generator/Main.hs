@@ -7,8 +7,8 @@ import ZkFold.Symbolic.Examples.UtxoAccumulator
 
 main :: IO ()
 main = do
-  gsData <- readFileJSON "utxo-accumulator-api/data/bls12381-g1_n65541.json"
-  h1Data <- head <$> readFileJSON "utxo-accumulator-api/data/bls12381-g2_n1.json"
+  gsData <- readFileJSON "utxo-accumulator-api/data/bls12381-g1_n65542.json"
+  h1Data <- readFileJSON "utxo-accumulator-api/data/bls12381-g2_n2.json"
   let crs = UtxoAccumulatorCRS gsData h1Data [] []
       crs' =
         crs
