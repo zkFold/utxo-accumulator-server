@@ -1,12 +1,18 @@
 module Main where
 
-import ZkFold.Cardano.UtxoAccumulator.Constants (N, M, utxoAccumulatorCRS)
-import ZkFold.Prelude (writeFileJSON)
-import ZkFold.Symbolic.Examples.UtxoAccumulator (accumulationGroupElements, distributionGroupElements)
+import Data.Foldable (toList)
+import ZkFold.Cardano.UtxoAccumulator.Constants (M, N)
+import ZkFold.Prelude (readFileJSON, writeFileJSON)
+import ZkFold.Symbolic.Examples.UtxoAccumulator
 
 main :: IO ()
 main = do
-    crs <- utxoAccumulatorCRS
-
-    writeFileJSON "utxo-accumulator-api/data/accumulation-group-elements.json" (accumulationGroupElements @N @M crs)
-    writeFileJSON "utxo-accumulator-api/data/distribution-group-elements.json" (distributionGroupElements @N @M crs)
+  gsData <- readFileJSON "utxo-accumulator-api/data/bls12381-g1_n65542.json"
+  h1Data <- head <$> readFileJSON "utxo-accumulator-api/data/bls12381-g2_n1.json"
+  let crs = UtxoAccumulatorCRS gsData h1Data [] []
+      crs' =
+        crs
+          { crsAccElems = toList $ accumulationGroupElements @N @M crs
+          , crsDistElems = toList $ distributionGroupElements @N @M crs
+          }
+  writeFileJSON "utxo-accumulator-api/data/crs.json" crs'

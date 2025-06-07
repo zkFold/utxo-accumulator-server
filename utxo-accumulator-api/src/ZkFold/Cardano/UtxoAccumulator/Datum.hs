@@ -20,7 +20,7 @@ import ZkFold.Cardano.OffChain.BLS12_381 (convertG1)
 import ZkFold.Cardano.UPLC.UtxoAccumulator (
   UtxoAccumulatorDatum (..),
  )
-import ZkFold.Cardano.UtxoAccumulator.Precompute qualified as Precompute
+import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS (..))
 
 utxoAccumulatorDatumHash :: UtxoAccumulatorDatum -> BuiltinByteString
 utxoAccumulatorDatumHash = blake2b_224 . serialiseData . toBuiltinData
@@ -46,14 +46,16 @@ utxoAccumulatorDatumsFromElements gs =
         [lastAccPar]
         (map convertG1 gs)
 
-addDatums :: [UtxoAccumulatorDatum]
-addDatums = utxoAccumulatorDatumsFromElements Precompute.accumulationGroupElements
+addDatums :: UtxoAccumulatorCRS -> [UtxoAccumulatorDatum]
+addDatums UtxoAccumulatorCRS {..} =
+  utxoAccumulatorDatumsFromElements crsAccElems
 
-addDatumFromHash :: BuiltinByteString -> UtxoAccumulatorDatum
-addDatumFromHash = datumFromHash addDatums
+addDatumFromHash :: UtxoAccumulatorCRS -> BuiltinByteString -> UtxoAccumulatorDatum
+addDatumFromHash = datumFromHash . addDatums
 
-removeDatums :: [UtxoAccumulatorDatum]
-removeDatums = utxoAccumulatorDatumsFromElements Precompute.distributionGroupElements
+removeDatums :: UtxoAccumulatorCRS -> [UtxoAccumulatorDatum]
+removeDatums UtxoAccumulatorCRS {..} =
+  utxoAccumulatorDatumsFromElements crsDistElems
 
-removeDatumFromHash :: BuiltinByteString -> UtxoAccumulatorDatum
-removeDatumFromHash = datumFromHash removeDatums
+removeDatumFromHash :: UtxoAccumulatorCRS -> BuiltinByteString -> UtxoAccumulatorDatum
+removeDatumFromHash = datumFromHash . removeDatums

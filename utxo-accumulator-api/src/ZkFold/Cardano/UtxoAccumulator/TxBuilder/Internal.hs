@@ -58,6 +58,7 @@ initAccumulator crs serverAddr accumulationValue = do
 
 addUtxo ::
   GYTxQueryMonad m =>
+  UtxoAccumulatorCRS ->
   GYValue ->
   GYTxOutRef ->
   GYTxOutRef ->
@@ -66,10 +67,10 @@ addUtxo ::
   ScalarFieldOf BLS12_381_G1_Point ->
   ScalarFieldOf BLS12_381_G1_Point ->
   m (GYTxSkeleton 'PlutusV3)
-addUtxo accumulationValue scriptRef ttRef gyServer recipient l r = do
+addUtxo crs accumulationValue scriptRef ttRef gyServer recipient l r = do
   stateRef <- fromJust <$> getState (threadToken ttRef)
   GYTxOut {gyTxOutValue, gyTxOutDatum} <- fromJust <$> getOutput stateRef
-  let (dat, redeemer) = mkAddUtxo (fst $ fromJust gyTxOutDatum) (addressToPlutus recipient) l r
+  let (dat, redeemer) = mkAddUtxo crs (fst $ fromJust gyTxOutDatum) (addressToPlutus recipient) l r
   addrAcc <- utxoAccumulatorAddress accumulationValue
   return $
     mustHaveInput

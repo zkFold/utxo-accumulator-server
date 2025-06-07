@@ -17,6 +17,7 @@ import ZkFold.Cardano.UtxoAccumulator.Server.Orphans ()
 import ZkFold.Cardano.UtxoAccumulator.Server.Utils
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder (addUtxoRun)
 import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
+import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS)
 
 type TransactionPrefix :: Symbol
 type TransactionPrefix = "transaction"
@@ -57,9 +58,15 @@ instance ToJSON Transaction where
 type TransactionAPI = Summary "Transaction" :> Description "Build a UTxO Accumulator transaction." :> ReqBody '[JSON] Transaction :> Post '[JSON] GYTx
 
 handleTransaction ::
+  UtxoAccumulatorCRS ->
   Config ->
   Transaction ->
   IO GYTx
-handleTransaction cfg Transaction {..} = do
+handleTransaction crs cfg Transaction {..} = do
   logInfo cfg "Transaction API requested."
-  addUtxoRun cfg (addressFromBech32 txSender) (addressFromBech32 txRecipient) (fromConstant txNonceL) (fromConstant txNonceR) txDistributionTime
+  addUtxoRun crs cfg
+    (addressFromBech32 txSender)
+    (addressFromBech32 txRecipient)
+    (fromConstant txNonceL)
+    (fromConstant txNonceR)
+    txDistributionTime

@@ -49,18 +49,19 @@ utxoAccumulatorHashWrapper addr l r =
    in utxoAccumulatorHash a r
 
 mkAddUtxo ::
+  UtxoAccumulatorCRS ->
   GYDatum ->
   Address ->
   ScalarFieldOf BLS12_381_G1_Point ->
   ScalarFieldOf BLS12_381_G1_Point ->
   (GYDatum, GYRedeemer)
-mkAddUtxo dat addr l r =
+mkAddUtxo crs dat addr l r =
   let Datum d = datumToPlutus dat
       (UtxoAccumulatorDatum {..}, datumRemove, setup) = unsafeFromBuiltinData d :: (UtxoAccumulatorDatum, UtxoAccumulatorDatum, SetupBytes)
 
       h = convertZp $ utxoAccumulatorHashWrapper addr l r
 
-      d' = addDatumFromHash nextDatumHash
+      d' = addDatumFromHash crs nextDatumHash
       setup' = updateSetupBytes setup h $ fromJust maybeCurrentGroupElement
       dat' = datumFromPlutusData $ toBuiltinData (d', datumRemove, setup')
    in (dat', redeemerFromPlutusData $ AddUtxo h d')
@@ -92,7 +93,7 @@ mkRemoveUtxo crs dat hs as addr l r =
 
       (_, proof) = utxoAccumulatorProve @N @M crs hs' as' a r
 
-      d' = removeDatumFromHash nextDatumHash
+      d' = removeDatumFromHash crs nextDatumHash
       setup' = updateSetupBytes setup a' $ fromJust maybeCurrentGroupElement
       dat' = datumFromPlutusData $ toBuiltinData (datumAdd, d', setup')
    in (dat', redeemerFromPlutusData $ RemoveUtxo addr (convertZp l) (mkProof proof) d')

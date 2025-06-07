@@ -41,7 +41,6 @@ library
     ZkFold.Cardano.UtxoAccumulator.Constants
     ZkFold.Cardano.UtxoAccumulator.Database
     ZkFold.Cardano.UtxoAccumulator.Datum
-    ZkFold.Cardano.UtxoAccumulator.Precompute
     ZkFold.Cardano.UtxoAccumulator.Sync
     ZkFold.Cardano.UtxoAccumulator.Transition
     ZkFold.Cardano.UtxoAccumulator.TxBuilder
@@ -62,7 +61,6 @@ library
     bytestring,
     containers,
     directory,
-    file-embed,
     http-types,
     http-conduit,
     maestro-sdk,

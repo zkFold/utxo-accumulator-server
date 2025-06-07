@@ -126,6 +126,6 @@ runServer mfp mode = do
                     mainAPI
                     (Proxy :: Proxy '[AuthHandler Wai.Request ()])
                     (\ioAct -> Handler . ExceptT $ first (apiErrorToServerError . exceptionHandler) <$> try ioAct)
-                  $ mainServer cfg''
+                  $ mainServer crs cfg''
       ModeDistribute removeNoDate ->
         removeUtxoRun crs cfg'' removeNoDate

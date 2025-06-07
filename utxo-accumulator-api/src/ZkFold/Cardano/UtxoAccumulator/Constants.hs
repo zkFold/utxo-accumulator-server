@@ -14,7 +14,7 @@ import ZkFold.Cardano.UPLC.UtxoAccumulator (UtxoAccumulatorParameters, utxoAccum
 import ZkFold.Cardano.UtxoAccumulator.Datum (addDatums, removeDatums)
 import ZkFold.Prelude (readFileJSON)
 import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS (..), utxoAccumulatorVerifierSetup)
-import Prelude (IO, Integer, Maybe (..), return, ($), (.), (<$>))
+import Prelude (IO, Integer, Maybe (..), ($), (.))
 
 -- Thread token
 
@@ -87,17 +87,14 @@ utxoAccumulatorAddress v =
           }
 
 utxoAccumulatorCRS :: IO UtxoAccumulatorCRS
-utxoAccumulatorCRS = do
-  g1Data <- readFileJSON "utxo-accumulator-api/data/bls12381-g1_n65541.json"
-  g2Data <- head <$> readFileJSON "utxo-accumulator-api/data/bls12381-g2_n1.json"
-  return $ UtxoAccumulatorCRS g1Data g2Data
+utxoAccumulatorCRS = readFileJSON "utxo-accumulator-api/data/crs.json"
 
 utxoAccumulatorSetupBytesInit :: UtxoAccumulatorCRS -> SetupBytes
 utxoAccumulatorSetupBytesInit = mkSetup . utxoAccumulatorVerifierSetup @N @M
 
 utxoAccumulatorDatumInit :: UtxoAccumulatorCRS -> GYDatum
 utxoAccumulatorDatumInit crs =
-  let addDatum = head addDatums
-      removeDatum = head removeDatums
+  let addDatum = head $ addDatums crs
+      removeDatum = head $ removeDatums crs
       setup = utxoAccumulatorSetupBytesInit crs
    in datumFromPlutusData $ toBuiltinData (addDatum, removeDatum, setup)

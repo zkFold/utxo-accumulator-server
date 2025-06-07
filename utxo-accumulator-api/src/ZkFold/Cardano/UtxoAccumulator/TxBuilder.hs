@@ -72,6 +72,7 @@ initAccumulatorRun crs cfg@Config {..} = do
     return $ cfg {cfgMaybeThreadTokenRef = Just ref}
 
 addUtxoRun ::
+  UtxoAccumulatorCRS ->
   Config ->
   GYAddress -> -- sender
   GYAddress -> -- recipient
@@ -79,7 +80,7 @@ addUtxoRun ::
   ScalarFieldOf BLS12_381_G1_Point ->
   UtxoDistributionTime ->
   IO GYTx
-addUtxoRun cfg@Config {..} sender recipient l r distTime = do
+addUtxoRun crs cfg@Config {..} sender recipient l r distTime = do
   -- Update the UTXO accumulator data
   m <- getUtxoAccumulatorData cfgDatabasePath
   let key = AccumulatorDataKey recipient l
@@ -88,7 +89,7 @@ addUtxoRun cfg@Config {..} sender recipient l r distTime = do
 
   -- Build the transaction skeleton
   runBuilderWithConfig cfg sender $ do
-    txSkel <- addUtxo cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress recipient l r
+    txSkel <- addUtxo crs cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress recipient l r
     unsignedTx <$> buildTxBody txSkel
 
 removeUtxoRun :: UtxoAccumulatorCRS -> Config -> Bool -> IO ()
