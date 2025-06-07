@@ -23,10 +23,10 @@ type TransactionPrefix :: Symbol
 type TransactionPrefix = "transaction"
 
 data Transaction = Transaction
-  { txSender :: !GYAddressBech32
+  { txSender    :: !GYAddressBech32
   , txRecipient :: !GYAddressBech32
-  , txNonceL :: !Natural
-  , txNonceR :: !Natural
+  , txNonceL    :: !Natural
+  , txNonceR    :: !Natural
   , txDistributionTime :: !(Maybe POSIXTime)
   }
   deriving stock (Show, Eq, Generic)

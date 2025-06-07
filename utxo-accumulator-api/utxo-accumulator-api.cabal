@@ -94,10 +94,10 @@ test-suite utxo-accumulator-api-tests
     tasty-hunit,
     utxo-accumulator-api,
 
-executable precompute
+executable crs-generator
   import: common
   main-is: Main.hs
-  hs-source-dirs: precompute
+  hs-source-dirs: crs-generator
   build-depends:
     base,
     symbolic-base,
