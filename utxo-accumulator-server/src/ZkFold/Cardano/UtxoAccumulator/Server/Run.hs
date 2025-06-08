@@ -33,6 +33,7 @@ import ZkFold.Cardano.UtxoAccumulator.Server.RequestLoggerMiddleware (gcpReqLogg
 import ZkFold.Cardano.UtxoAccumulator.Server.Utils
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder (initAccumulatorRun, postScriptRun, removeUtxoRun)
 import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
+import ZkFold.Cardano.UtxoAccumulator.Server.RSA (generateRSAKeyPair)
 
 data Mode = ModeAccumulate | ModeDistribute Bool
   deriving (Eq, Show)
@@ -42,6 +43,7 @@ runServer mfp mode = do
   sc@ServerConfig {..} <- serverConfigOptionalFPIO mfp
   (serverPaymentKey, serverStakeKey, serverAddr) <- fromJust <$> signingKeysFromServerWallet scNetworkId scWallet
   let coreCfg = coreConfigFromServerConfig sc
+  rsaKeyPair <- generateRSAKeyPair
   withCfgProviders coreCfg "server" $ \providers -> do
     let logInfoS = gyLogInfo providers mempty
         logErrorS = gyLogError providers mempty
@@ -126,6 +128,6 @@ runServer mfp mode = do
                     mainAPI
                     (Proxy :: Proxy '[AuthHandler Wai.Request ()])
                     (\ioAct -> Handler . ExceptT $ first (apiErrorToServerError . exceptionHandler) <$> try ioAct)
-                  $ mainServer crs cfg''
+                  $ mainServer rsaKeyPair crs cfg''
       ModeDistribute removeNoDate ->
         removeUtxoRun crs cfg'' removeNoDate

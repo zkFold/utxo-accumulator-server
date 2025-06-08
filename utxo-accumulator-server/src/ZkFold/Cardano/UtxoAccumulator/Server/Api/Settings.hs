@@ -15,6 +15,7 @@ import GeniusYield.Types.OpenApi ()
 import PackageInfo_utxo_accumulator_server qualified as PackageInfo
 import Servant
 import ZkFold.Cardano.UtxoAccumulator.Server.Orphans ()
+import ZkFold.Cardano.UtxoAccumulator.Server.RSA (getPublicKeyNumbers, RSAKeyPair)
 import ZkFold.Cardano.UtxoAccumulator.Server.Utils
 import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
 
@@ -25,6 +26,8 @@ data Settings = Settings
   { settingsNetwork :: !String
   , settingsVersion :: !String
   , settingsAccumulationValue :: !String
+  , settingsRsaPublicKeyN :: !String -- Modulus as decimal string
+  , settingsRsaPublicKeyE :: !String -- Exponent as decimal string
   }
   deriving stock (Show, Eq, Generic)
   deriving
@@ -38,14 +41,17 @@ instance Swagger.ToSchema Settings where
 
 type SettingsAPI = Summary "Server settings" :> Description "Get server settings such as network and version." :> Get '[JSON] Settings
 
-handleSettings :: Config -> IO Settings
-handleSettings cfg@Config {..} = do
+handleSettings :: RSAKeyPair -> Config -> IO Settings
+handleSettings rsaKeyPair cfg@Config {..} = do
   logInfo cfg "Settings API requested."
+  let (n, e) = getPublicKeyNumbers rsaKeyPair
   pure $
     Settings
       { settingsNetwork = cfgNetworkId & customShowNetworkId
       , settingsVersion = showVersion PackageInfo.version
       , settingsAccumulationValue = show cfgAccumulationValue
+      , settingsRsaPublicKeyN = show n
+      , settingsRsaPublicKeyE = show e
       }
 
 -- >>> customShowNetworkId GYMainnet

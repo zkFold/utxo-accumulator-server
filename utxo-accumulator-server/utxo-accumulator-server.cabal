@@ -49,6 +49,7 @@ library
     ZkFold.Cardano.UtxoAccumulator.Server.RequestLoggerMiddleware
     ZkFold.Cardano.UtxoAccumulator.Server.Run
     ZkFold.Cardano.UtxoAccumulator.Server.Utils
+    ZkFold.Cardano.UtxoAccumulator.Server.RSA
 
   other-modules:
     PackageInfo_utxo_accumulator_server
@@ -60,8 +61,10 @@ library
     aeson,
     atlas-cardano,
     base,
+    base64-bytestring,
     binary,
     bytestring,
+    cryptonite,
     deriving-aeson,
     envy,
     fast-logger,

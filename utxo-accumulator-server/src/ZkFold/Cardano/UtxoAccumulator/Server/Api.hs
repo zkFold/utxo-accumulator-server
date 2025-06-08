@@ -21,6 +21,7 @@ import ZkFold.Cardano.UtxoAccumulator.Server.Api.Tx (TransactionAPI, handleTrans
 import ZkFold.Cardano.UtxoAccumulator.Server.Auth (APIKeyAuthProtect, V0)
 import ZkFold.Cardano.UtxoAccumulator.Server.Orphans ()
 import ZkFold.Cardano.UtxoAccumulator.Types (Config)
+import ZkFold.Cardano.UtxoAccumulator.Server.RSA (RSAKeyPair)
 import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS)
 
 -------------------------------------------------------------------------------
@@ -59,11 +60,11 @@ utxoAccumulatorAPIOpenApi =
       & applyTagsFor (subOperations (Proxy :: Proxy ("settings" +> SettingsAPI)) (Proxy :: Proxy UtxoAccumulatorAPI)) ["Settings" & OpenApi.description ?~ "Endpoint to get server settings such as network and version"]
       & applyTagsFor (subOperations (Proxy :: Proxy ("transaction" +> TransactionAPI)) (Proxy :: Proxy UtxoAccumulatorAPI)) ["Transaction" & OpenApi.description ?~ "Endpoint to make a transaction using the UTxO Accumulator"]
 
-utxoAccumulatorServer :: UtxoAccumulatorCRS -> Config -> ServerT UtxoAccumulatorAPI IO
-utxoAccumulatorServer crs cfg =
+utxoAccumulatorServer :: RSAKeyPair -> UtxoAccumulatorCRS -> Config -> ServerT UtxoAccumulatorAPI IO
+utxoAccumulatorServer rsaKeyPair crs cfg =
   ignoredAuthResult $
-    handleSettings cfg
-      :<|> handleTransaction crs cfg
+    handleSettings rsaKeyPair cfg
+      :<|> handleTransaction crs cfg rsaKeyPair
  where
   ignoredAuthResult f _authResult = f
 
@@ -73,5 +74,5 @@ type MainAPI =
 mainAPI :: Proxy MainAPI
 mainAPI = Proxy
 
-mainServer :: UtxoAccumulatorCRS -> Config -> ServerT MainAPI IO
+mainServer :: RSAKeyPair -> UtxoAccumulatorCRS -> Config -> ServerT MainAPI IO
 mainServer = utxoAccumulatorServer
