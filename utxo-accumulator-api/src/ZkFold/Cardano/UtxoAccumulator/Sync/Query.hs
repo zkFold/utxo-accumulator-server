@@ -1,8 +1,11 @@
 module ZkFold.Cardano.UtxoAccumulator.Sync.Query where
 
-import Data.Maybe (fromJust)
+import Data.Maybe (catMaybes, fromJust)
 import GeniusYield.TxBuilder (GYTxQueryMonad (..))
 import GeniusYield.Types
+import ZkFold.Cardano.UtxoAccumulator.Constants (threadToken)
+import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
+import ZkFold.Cardano.UtxoAccumulator.Types.Sync (SyncParams (..))
 
 getState ::
   GYTxQueryMonad m =>
@@ -24,3 +27,24 @@ getOutput ref = do
     Just (GYUTxO _ utxoAddress utxoValue (GYOutDatumInline utxoDatum) _) ->
       Just $ mkGYTxOut utxoAddress utxoValue utxoDatum
     _ -> Nothing
+
+getSyncParams ::
+  GYTxQueryMonad m =>
+  Config ->
+  [GYTxOutRef] ->
+  m [SyncParams]
+getSyncParams Config {..} refs = do
+  let getParams ref = do
+        stateRef <- getState (threadToken ref)
+        case stateRef of
+          Just sr ->
+            return $
+              Just $
+                SyncParams
+                  { syncStateRef = sr
+                  , syncThreadToken = threadToken ref
+                  , syncMaestroToken = cfgMaestroToken
+                  , syncgNetworkId = cfgNetworkId
+                  }
+          Nothing -> return Nothing
+  catMaybes <$> mapM getParams refs

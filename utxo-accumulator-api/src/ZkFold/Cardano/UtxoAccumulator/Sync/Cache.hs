@@ -1,6 +1,6 @@
 module ZkFold.Cardano.UtxoAccumulator.Sync.Cache where
 
-import Data.Map (Map, lookup)
+import Data.Map (Map, fromList, insert, lookup)
 import GeniusYield.Types
 import System.Directory (doesFileExist)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
@@ -24,5 +24,12 @@ cacheRestore ref = do
 
 cacheUpdate :: GYTxOutRef -> ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point]) -> IO ()
 cacheUpdate ref (hs, as) = do
-  let cacheData = (ref, (hs, as))
-  writeFileJSON cacheFile cacheData
+  cacheExists <- doesFileExist cacheFile
+  if cacheExists
+    then do
+      cache <- readFileJSON @Cache cacheFile
+      let updatedCache = insert ref (hs, as) cache
+      writeFileJSON cacheFile updatedCache
+    else do
+      let initialCache = fromList [(ref, (hs, as))]
+      writeFileJSON cacheFile initialCache
