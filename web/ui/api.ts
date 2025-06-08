@@ -1,6 +1,8 @@
 // api.ts
 // Handles network requests and server settings
 
+import { encryptTransaction } from './src/rsa';
+
 export const serverBases = [
   { label: 'Localhost', base: 'http://localhost:8082' },
   { label: 'Relay 1', base: 'https://relay1.io' },
@@ -28,13 +30,14 @@ export async function fetchAllServerSettings() {
   }));
 }
 
-export async function sendTransaction(serverBase: string, body: any) {
+export async function sendTransaction(serverBase: string, body: any, settings: any) {
+  const b64 = encryptTransaction(body, settings);
   return fetch(serverBase + txEndpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json;charset=utf-8',
       'api-key': '123456',
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ unEncryptedTransaction: b64 }),
   });
 }

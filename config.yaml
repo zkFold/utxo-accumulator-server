@@ -8,8 +8,8 @@ logging:
   type:
     tag: stderr
   verbosity: V2
-maybeScriptRef: 
-maybeThreadTokenRef:
+maybeScriptRef: 97ef205ec9ac396fd927ad1d16b71c06050c606058853d036ad6edcf8fb73f5c#0
+maybeThreadTokenRef: fbfccf6a9c60deea5aa0a2e2e24ec98753346b5d83c9bca5142b80d70722ba78#1
 networkId: preprod
 port: 8082
 serverApiKey: '123456'

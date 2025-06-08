@@ -1,7 +1,7 @@
 // @ts-ignore: Allow JS import for branding config
 import { BRANDING } from './branding';
 import { wallets, getWalletApi, getWalletAnyAddress, hexToBech32, signAndSubmitTxWithWallet, WalletApi, WalletInfo } from './wallet';
-import { serverBases, fetchAllServerSettings, sendTransaction, serverSettings, txEndpoint } from './api';
+import { serverBases, fetchAllServerSettings, sendTransaction, serverSettings } from './api';
 import { parseAccumulationValue, setResultMessage, clearResultMessage, isValidPreprodBech32Address, randomBlsScalarHex } from './utils';
 import { walletSelect, serverSelect, amountSelect, addressInputGrid, fillAddrBtn, sendBtn, resultDivGrid, title, subtitle, initUILayout, removalTimeSelect } from './ui';
 
@@ -160,7 +160,8 @@ sendBtn.onclick = async () => {
     tx_distribution_time: tx_distribution_time === null ? null : tx_distribution_time
   };
   try {
-    const response = await sendTransaction(serverBase, body);
+    const settings = serverSettings[serverBase];
+    const response = await sendTransaction(serverBase, body, settings);
     if (!response.ok) {
       setResultMessage(resultDivGrid, `Error: ${response.status} ${response.statusText}`);
       return;
