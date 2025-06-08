@@ -20,8 +20,8 @@ import ZkFold.Cardano.UtxoAccumulator.Server.Api.Settings (SettingsAPI, handleSe
 import ZkFold.Cardano.UtxoAccumulator.Server.Api.Tx (TransactionAPI, handleTransaction)
 import ZkFold.Cardano.UtxoAccumulator.Server.Auth (APIKeyAuthProtect, V0)
 import ZkFold.Cardano.UtxoAccumulator.Server.Orphans ()
-import ZkFold.Cardano.UtxoAccumulator.Types (Config)
 import ZkFold.Cardano.UtxoAccumulator.Server.RSA (RSAKeyPair)
+import ZkFold.Cardano.UtxoAccumulator.Types (Config)
 import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS)
 
 -------------------------------------------------------------------------------

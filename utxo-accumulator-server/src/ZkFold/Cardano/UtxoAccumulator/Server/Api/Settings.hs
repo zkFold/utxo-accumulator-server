@@ -15,7 +15,7 @@ import GeniusYield.Types.OpenApi ()
 import PackageInfo_utxo_accumulator_server qualified as PackageInfo
 import Servant
 import ZkFold.Cardano.UtxoAccumulator.Server.Orphans ()
-import ZkFold.Cardano.UtxoAccumulator.Server.RSA (getPublicKeyNumbers, RSAKeyPair)
+import ZkFold.Cardano.UtxoAccumulator.Server.RSA (RSAKeyPair, getPublicKeyNumbers)
 import ZkFold.Cardano.UtxoAccumulator.Server.Utils
 import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
 

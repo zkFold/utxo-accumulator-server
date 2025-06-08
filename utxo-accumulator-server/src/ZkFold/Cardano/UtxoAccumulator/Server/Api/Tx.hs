@@ -3,9 +3,9 @@ module ZkFold.Cardano.UtxoAccumulator.Server.Api.Tx (
   handleTransaction,
 ) where
 
-import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), object, withObject, (.:), (.:?), (.=), eitherDecodeStrict)
-import qualified Data.ByteString.Base64 as B64
-import qualified Data.ByteString.Char8 as BS
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), eitherDecodeStrict, object, withObject, (.:), (.:?), (.=))
+import Data.ByteString.Base64 qualified as B64
+import Data.ByteString.Char8 qualified as BS
 import Data.Swagger qualified as Swagger
 import Data.Time.Clock.POSIX (POSIXTime)
 import Deriving.Aeson
@@ -16,20 +16,20 @@ import GeniusYield.Types.OpenApi ()
 import Servant
 import ZkFold.Algebra.Class (fromConstant)
 import ZkFold.Cardano.UtxoAccumulator.Server.Orphans ()
+import ZkFold.Cardano.UtxoAccumulator.Server.RSA (RSAKeyPair, decryptWithPrivateKey)
 import ZkFold.Cardano.UtxoAccumulator.Server.Utils
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder (addUtxoRun)
 import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
 import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS)
-import ZkFold.Cardano.UtxoAccumulator.Server.RSA (decryptWithPrivateKey, RSAKeyPair)
 
 type TransactionPrefix :: Symbol
 type TransactionPrefix = "transaction"
 
 data Transaction = Transaction
-  { txSender    :: !GYAddressBech32
+  { txSender :: !GYAddressBech32
   , txRecipient :: !GYAddressBech32
-  , txNonceL    :: !Natural
-  , txNonceR    :: !Natural
+  , txNonceL :: !Natural
+  , txNonceR :: !Natural
   , txDistributionTime :: !(Maybe POSIXTime)
   }
   deriving stock (Show, Eq, Generic)
@@ -58,7 +58,7 @@ instance ToJSON Transaction where
       , "tx_distribution_time" .= txDistributionTime
       ]
 
-newtype EncryptedTransaction = EncryptedTransaction { unEncryptedTransaction :: String }
+newtype EncryptedTransaction = EncryptedTransaction {unEncryptedTransaction :: String}
   deriving stock (Show, Eq, Generic)
   deriving anyclass (FromJSON, ToJSON)
 
@@ -79,8 +79,10 @@ handleTransaction crs cfg rsaKeyPair (EncryptedTransaction b64) = do
   logInfo cfg "Transaction API requested (encrypted)."
   case B64.decode (BS.pack b64) >>= decryptWithPrivateKey rsaKeyPair >>= eitherDecodeStrict of
     Left err -> fail $ "Transaction decode failed: " ++ err
-    Right Transaction{..} ->
-      addUtxoRun crs cfg
+    Right Transaction {..} ->
+      addUtxoRun
+        crs
+        cfg
         (addressFromBech32 txSender)
         (addressFromBech32 txRecipient)
         (fromConstant txNonceL)

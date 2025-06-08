@@ -1,6 +1,5 @@
 module ZkFold.Cardano.UtxoAccumulator.Sync.Internal where
 
-
 import GeniusYield.Types
 import PlutusLedgerApi.V3 (toBuiltinData)
 import PlutusTx.Builtins (ByteOrder (..), serialiseData)
@@ -10,7 +9,7 @@ import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Field (toZp)
 import ZkFold.Cardano.UPLC.UtxoAccumulator (UtxoAccumulatorRedeemer (..))
 import ZkFold.Cardano.UtxoAccumulator.Sync.Cache (cacheRestore, cacheUpdate)
-import ZkFold.Cardano.UtxoAccumulator.Sync.FetchTx (fetchTx, FetchTxResult (..))
+import ZkFold.Cardano.UtxoAccumulator.Sync.FetchTx (FetchTxResult (..), fetchTx)
 import ZkFold.Cardano.UtxoAccumulator.Types.Sync (SyncParams (..))
 
 trySync :: SyncParams -> IO (Maybe (GYTxOutRef, UtxoAccumulatorRedeemer))

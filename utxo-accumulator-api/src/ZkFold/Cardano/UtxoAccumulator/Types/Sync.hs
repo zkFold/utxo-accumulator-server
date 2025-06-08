@@ -1,6 +1,6 @@
 module ZkFold.Cardano.UtxoAccumulator.Types.Sync where
 
-import GeniusYield.Types (GYNetworkId, GYTxOutRef, GYAssetClass)
+import GeniusYield.Types (GYAssetClass, GYNetworkId, GYTxOutRef)
 import Prelude (String)
 
 data SyncParams = SyncParams

@@ -1,12 +1,12 @@
 module ZkFold.Cardano.UtxoAccumulator.Sync.Cache where
 
+import Data.Map (Map, lookup)
 import GeniusYield.Types
 import System.Directory (doesFileExist)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
-import ZkFold.Prelude (writeFileJSON, readFileJSON)
-import Data.Map (Map, lookup)
 import ZkFold.Cardano.UtxoAccumulator.Orphans ()
+import ZkFold.Prelude (readFileJSON, writeFileJSON)
 import Prelude hiding (lookup)
 
 -- | Path to the cache file

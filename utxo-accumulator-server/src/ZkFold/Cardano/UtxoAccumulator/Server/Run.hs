@@ -29,11 +29,11 @@ import ZkFold.Cardano.UtxoAccumulator.Server.Api
 import ZkFold.Cardano.UtxoAccumulator.Server.Auth
 import ZkFold.Cardano.UtxoAccumulator.Server.Config (ServerConfig (..), coreConfigFromServerConfig, serverConfigOptionalFPIO, signingKeysFromServerWallet, updateConfigYaml)
 import ZkFold.Cardano.UtxoAccumulator.Server.ErrorMiddleware
+import ZkFold.Cardano.UtxoAccumulator.Server.RSA (generateRSAKeyPair)
 import ZkFold.Cardano.UtxoAccumulator.Server.RequestLoggerMiddleware (gcpReqLogger)
 import ZkFold.Cardano.UtxoAccumulator.Server.Utils
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder (initAccumulatorRun, postScriptRun, removeUtxoRun)
 import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
-import ZkFold.Cardano.UtxoAccumulator.Server.RSA (generateRSAKeyPair)
 
 data Mode = ModeAccumulate | ModeDistribute Bool
   deriving (Eq, Show)
