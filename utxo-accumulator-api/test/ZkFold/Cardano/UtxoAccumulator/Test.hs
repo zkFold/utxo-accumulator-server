@@ -11,8 +11,8 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCaseSteps)
 import ZkFold.Algebra.Field (toZp)
 import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, utxoAccumulatorAddress, utxoAccumulatorCRS, utxoAccumulatorScript)
-import ZkFold.Cardano.UtxoAccumulator.TxBuilder
 import ZkFold.Cardano.UtxoAccumulator.IO (runSignerWithConfig)
+import ZkFold.Cardano.UtxoAccumulator.TxBuilder
 import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
 
 fundingRun :: User -> GYAddress -> GYValue -> Ctx -> IO ()
