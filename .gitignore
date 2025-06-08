@@ -27,3 +27,4 @@ node_modules
 e2e/public/css/
 web/ui/dist/
 web/ui/public
+database/*

@@ -20,12 +20,14 @@ import Maestro.Types.V1 (UtxoWithBytes)
 import PlutusLedgerApi.V3 (Data, FromData (fromBuiltinData), dataToBuiltinData, toBuiltinData)
 import PlutusTx.Builtins (ByteOrder (..), serialiseData)
 import PlutusTx.Prelude (blake2b_224, byteStringToInteger)
+import System.Directory (doesFileExist)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Field (toZp)
 import ZkFold.Cardano.UPLC.UtxoAccumulator (UtxoAccumulatorRedeemer (..))
 import ZkFold.Cardano.UtxoAccumulator.Constants (threadToken)
 import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
+import ZkFold.Prelude (writeFileJSON, readFileJSON)
 
 data FetchTxResult = FetchTxResult UtxoAccumulatorRedeemer [GYUTxO]
   deriving Show
@@ -69,6 +71,35 @@ fetchTx nId apiKey txHash = do
   let body = getResponseBody response
   return $ decode body
 
+-- | Path to the cache file
+cacheFile :: FilePath
+cacheFile = "database/cache.json"
+
+type Cache = (GYTxOutRef, ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point]))
+
+cacheHit :: GYTxOutRef -> IO Bool
+cacheHit ref = do
+  cacheExists <- doesFileExist cacheFile
+  if cacheExists
+    then do
+      (lastRef, _) <- readFileJSON @Cache cacheFile
+      return $ lastRef == ref
+    else return False
+
+cacheRestore :: IO ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point])
+cacheRestore = do
+  cacheExists <- doesFileExist cacheFile
+  if cacheExists
+    then do
+      (_, (hs, as)) <- readFileJSON @Cache cacheFile
+      return (hs, as)
+    else return ([], [])
+
+cacheUpdate :: GYTxOutRef -> ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point]) -> IO ()
+cacheUpdate ref (hs, as) = do
+  let cacheData = (ref, (hs, as))
+  writeFileJSON cacheFile cacheData
+
 trySync :: Config -> GYTxOutRef -> IO (Maybe (GYTxOutRef, UtxoAccumulatorRedeemer))
 trySync Config {..} ref = do
   let nId = if cfgNetworkId == GYMainnet then "mainnet" else "preprod"
@@ -80,23 +111,23 @@ trySync Config {..} ref = do
       return $ Just (utxoRef utxo, red)
     _ -> return Nothing
 
-fullSyncInternal :: Config -> GYTxOutRef -> IO [UtxoAccumulatorRedeemer]
+fullSyncInternal :: Config -> GYTxOutRef -> IO ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point])
 fullSyncInternal cfg ref = do
-  maybeTxInfo <- trySync cfg ref
-  case maybeTxInfo of
-    Just (ref', redeemer) -> do
-      redeemers <- fullSyncInternal cfg ref'
-      return (redeemers ++ [redeemer])
-    Nothing -> return []
+  b <- cacheHit ref
+  if b
+    then cacheRestore
+    else do
+      maybeTxInfo <- trySync cfg ref
+      case maybeTxInfo of
+        Just (ref', redeemer) -> do
+          (hs, as) <- fullSyncInternal cfg ref'
+          case redeemer of
+            AddUtxo h _ -> return (hs ++ [toZp h], as)
+            RemoveUtxo addr l _ _ -> return (hs, as ++ [toZp (byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData (addr, l))])
+        Nothing -> return ([], [])
 
 fullSync :: Config -> GYTxOutRef -> IO ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point])
 fullSync cfg ref = do
-  redeemers <- fullSyncInternal cfg ref
-  return $
-    foldl
-      ( \(hs, as) redeemer -> case redeemer of
-          AddUtxo h _ -> (hs ++ [toZp h], as)
-          RemoveUtxo addr l _ _ -> (hs, toZp (byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData (addr, l)) : as)
-      )
-      ([], [])
-      redeemers
+  result <- fullSyncInternal cfg ref
+  cacheUpdate ref result
+  return result

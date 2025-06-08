@@ -2,7 +2,7 @@ accumulationValue: 100000000
 coreProvider:
   maestroToken: aCmZhlBBq7f3dHls9INwu9KlsNQwUXS3
   turboSubmit: false
-databasePath: txs.json
+databasePath: database/txs.json
 logging:
 - severity: Debug
   type:
