@@ -15,10 +15,11 @@ import ZkFold.Cardano.UtxoAccumulator.Constants (threadToken)
 import ZkFold.Cardano.UtxoAccumulator.Database (AccumulatorDataItem (..), AccumulatorDataKey (AccumulatorDataKey), UtxoDistributionTime, getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
 import ZkFold.Cardano.UtxoAccumulator.Sync (fullSync)
 import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper)
-import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (addUtxo, initAccumulator, postScript, removeUtxo)
+import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Skeleton (addUtxo, initAccumulator, postScript, removeUtxo)
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils (getState)
 import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
 import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS)
+import ZkFold.Cardano.UtxoAccumulator.Types.Sync (SyncParams(..))
 
 runQueryWithConfig :: Config -> GYTxQueryMonadIO a -> IO a
 runQueryWithConfig cfg =
@@ -98,7 +99,13 @@ removeUtxoRun crs cfg@Config {..} removeNoDate = do
   m <- getUtxoAccumulatorData cfgDatabasePath
   unless (null m) $ do
     stateRef <- runQueryWithConfig cfg $ fromJust <$> getState (threadToken $ fromJust cfgMaybeThreadTokenRef)
-    (hs, as) <- fullSync cfg stateRef
+    let sp = SyncParams
+          { syncgNetworkId = cfgNetworkId
+          , syncMaestroToken = cfgMaestroToken
+          , syncThreadToken = threadToken $ fromJust cfgMaybeThreadTokenRef
+          , syncStateRef = stateRef
+          }
+    (hs, as) <- fullSync sp
     now <- getPOSIXTime
 
     -- Find UTxOs eligible for removal

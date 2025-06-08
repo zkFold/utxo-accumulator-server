@@ -41,14 +41,19 @@ library
     ZkFold.Cardano.UtxoAccumulator.Constants
     ZkFold.Cardano.UtxoAccumulator.Database
     ZkFold.Cardano.UtxoAccumulator.Datum
+    ZkFold.Cardano.UtxoAccumulator.Orphans
     ZkFold.Cardano.UtxoAccumulator.Sync
+    ZkFold.Cardano.UtxoAccumulator.Sync.Cache
+    ZkFold.Cardano.UtxoAccumulator.Sync.FetchTx
+    ZkFold.Cardano.UtxoAccumulator.Sync.Internal
     ZkFold.Cardano.UtxoAccumulator.Transition
     ZkFold.Cardano.UtxoAccumulator.TxBuilder
-    ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal
+    ZkFold.Cardano.UtxoAccumulator.TxBuilder.Skeleton
     ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils
     ZkFold.Cardano.UtxoAccumulator.Types
     ZkFold.Cardano.UtxoAccumulator.Types.Config
     ZkFold.Cardano.UtxoAccumulator.Types.Errors
+    ZkFold.Cardano.UtxoAccumulator.Types.Sync
     ZkFold.Cardano.UtxoAccumulator.Utils
 
   -- other-modules:

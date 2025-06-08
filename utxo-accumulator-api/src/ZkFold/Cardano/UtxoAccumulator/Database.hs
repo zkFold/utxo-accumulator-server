@@ -34,7 +34,6 @@ data AccumulatorDataItem = AccumulatorDataItem
   deriving (Show, Eq, Generic)
   deriving anyclass (FromJSON, ToJSON)
 
--- | The accumulator state: address -> data item
 type AccumulatorData = Map AccumulatorDataKey AccumulatorDataItem
 
 removeUtxoAccumulatorData :: FilePath -> IO ()

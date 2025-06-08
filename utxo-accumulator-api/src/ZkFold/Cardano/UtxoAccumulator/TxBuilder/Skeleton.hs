@@ -1,4 +1,4 @@
-module ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (
+module ZkFold.Cardano.UtxoAccumulator.TxBuilder.Skeleton (
   postScript,
   initAccumulator,
   addUtxo,
