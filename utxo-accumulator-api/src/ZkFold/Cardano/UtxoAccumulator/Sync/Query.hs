@@ -1,4 +1,4 @@
-module ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils where
+module ZkFold.Cardano.UtxoAccumulator.Sync.Query where
 
 import Data.Maybe (fromJust)
 import GeniusYield.TxBuilder (GYTxQueryMonad (..))

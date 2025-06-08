@@ -1,4 +1,4 @@
-module ZkFold.Cardano.UtxoAccumulator.TxBuilder.Skeleton (
+module ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (
   postScript,
   initAccumulator,
   addUtxo,
@@ -12,7 +12,7 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Cardano.UtxoAccumulator.Constants
 import ZkFold.Cardano.UtxoAccumulator.Transition (mkAddUtxo, mkRemoveUtxo)
-import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils (getOutput, getState)
+import ZkFold.Cardano.UtxoAccumulator.Sync (getOutput, getState)
 import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS)
 
 postScript ::

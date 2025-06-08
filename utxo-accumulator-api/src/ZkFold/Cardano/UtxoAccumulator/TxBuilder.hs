@@ -13,39 +13,13 @@ import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Field (toZp)
 import ZkFold.Cardano.UtxoAccumulator.Constants (threadToken)
 import ZkFold.Cardano.UtxoAccumulator.Database (AccumulatorDataItem (..), AccumulatorDataKey (AccumulatorDataKey), UtxoDistributionTime, getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
-import ZkFold.Cardano.UtxoAccumulator.Sync (fullSync)
+import ZkFold.Cardano.UtxoAccumulator.IO (runBuilderWithConfig, runQueryWithConfig, runSignerWithConfig)
+import ZkFold.Cardano.UtxoAccumulator.Sync (fullSync, getState)
 import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper)
-import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Skeleton (addUtxo, initAccumulator, postScript, removeUtxo)
-import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Utils (getState)
+import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (addUtxo, initAccumulator, postScript, removeUtxo)
 import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
 import ZkFold.Cardano.UtxoAccumulator.Types.Sync (SyncParams (..))
 import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS)
-
-runQueryWithConfig :: Config -> GYTxQueryMonadIO a -> IO a
-runQueryWithConfig cfg =
-  runGYTxQueryMonadIO
-    (cfgNetworkId cfg)
-    (cfgProviders cfg)
-
-runBuilderWithConfig :: Config -> GYAddress -> GYTxBuilderMonadIO a -> IO a
-runBuilderWithConfig cfg addr =
-  runGYTxBuilderMonadIO
-    (cfgNetworkId cfg)
-    (cfgProviders cfg)
-    [addr]
-    addr
-    Nothing
-
-runSignerWithConfig :: Config -> GYTxMonadIO a -> IO a
-runSignerWithConfig cfg =
-  runGYTxMonadIO
-    (cfgNetworkId cfg)
-    (cfgProviders cfg)
-    (cfgPaymentKey cfg)
-    (cfgStakeKey cfg)
-    [cfgAddress cfg]
-    (cfgAddress cfg)
-    Nothing
 
 postScriptRun ::
   Config ->
