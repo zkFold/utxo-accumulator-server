@@ -29,6 +29,7 @@ type UtxoDistributionTime = Maybe POSIXTime
 data AccumulatorDataItem = AccumulatorDataItem
   { adiNonceR :: ScalarFieldOf BLS12_381_G1_Point
   , adiDistributionTime :: UtxoDistributionTime
+  , adiThreadTokenRef :: GYTxOutRef
   }
   deriving (Show, Eq, Generic)
   deriving anyclass (FromJSON, ToJSON)

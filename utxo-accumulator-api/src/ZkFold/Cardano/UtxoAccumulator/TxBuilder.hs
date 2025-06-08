@@ -84,7 +84,7 @@ addUtxoRun crs cfg@Config {..} sender recipient l r distTime = do
   -- Update the UTXO accumulator data
   m <- getUtxoAccumulatorData cfgDatabasePath
   let key = AccumulatorDataKey recipient l
-      item = AccumulatorDataItem r distTime
+      item = AccumulatorDataItem r distTime (fromJust cfgMaybeThreadTokenRef)
   putUtxoAccumulatorData cfgDatabasePath $ insert key item m
 
   -- Build the transaction skeleton
@@ -104,7 +104,8 @@ removeUtxoRun crs cfg@Config {..} removeNoDate = do
     -- Find UTxOs eligible for removal
     let eligible =
           [ (recipient, l, r)
-          | (AccumulatorDataKey recipient l, AccumulatorDataItem r mDistTime) <- toList m
+          | (AccumulatorDataKey recipient l, AccumulatorDataItem r mDistTime ttRef) <- toList m
+          , ttRef == fromJust cfgMaybeThreadTokenRef
           , maybe removeNoDate (<= now) mDistTime
           , toZp (byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData $ addressToPlutus recipient) `notElem` as
           ]
