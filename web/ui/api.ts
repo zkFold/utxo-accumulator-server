@@ -1,7 +1,7 @@
 // api.ts
 // Handles network requests and server settings
 
-import { encryptTransaction } from './src/rsa';
+import { encryptTransaction } from './rsa';
 
 export const serverBases = [
   { label: 'Localhost', base: 'http://localhost:8082' },

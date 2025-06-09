@@ -6,8 +6,8 @@ import { parseAccumulationValue, setResultMessage, clearResultMessage, isValidPr
 import { walletSelect, serverSelect, amountSelect, addressInputGrid, fillAddrBtn, sendBtn, resultDivGrid, title, subtitle, initUILayout, removalTimeSelect } from './ui';
 
 // Set up branding: logo, title, styles, and labels
-document.getElementById('app-title')!.textContent = BRANDING.title;
 document.title = BRANDING.title;
+
 // Set favicon dynamically from BRANDING.logoUrl
 (function setFavicon() {
   let favicon = document.querySelector('link[rel~="icon"]') as HTMLLinkElement | null;
@@ -19,6 +19,7 @@ document.title = BRANDING.title;
   favicon.type = BRANDING.logoUrl.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
   favicon.href = BRANDING.logoUrl;
 })();
+
 // Inject style variables
 const styleVars = BRANDING.styles;
 for (const key in styleVars) {
@@ -27,11 +28,6 @@ for (const key in styleVars) {
 
 // Set up the UI layout and structure
 initUILayout();
-
-// Apply branding to UI labels and buttons
-title.textContent = BRANDING.title;
-document.title = BRANDING.title;
-subtitle.textContent = BRANDING.subtitle;
 
 // Set button and label texts from branding config
 fillAddrBtn.textContent = BRANDING.labels.useWalletAddress || 'Use Wallet Address';
