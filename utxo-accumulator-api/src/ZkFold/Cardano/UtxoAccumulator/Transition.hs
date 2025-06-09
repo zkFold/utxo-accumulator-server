@@ -37,11 +37,12 @@ utxoAccumulatorAddressHash ::
   Address ->
   ScalarFieldOf BLS12_381_G1_Point ->
   ScalarFieldOf BLS12_381_G1_Point
-utxoAccumulatorAddressHash addr l = toZp
-  $ byteStringToInteger BigEndian
-  $ blake2b_224
-  $ serialiseData
-  $ toBuiltinData (addr, convertZp l)
+utxoAccumulatorAddressHash addr l =
+  toZp
+    $ byteStringToInteger BigEndian
+    $ blake2b_224
+    $ serialiseData
+    $ toBuiltinData (addr, convertZp l)
 
 utxoAccumulatorHashWrapper ::
   Address ->
