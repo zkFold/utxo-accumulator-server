@@ -1,8 +1,8 @@
 // Centralized branding and customization for the UTxO Accumulator UI
 export const BRANDING = {
   // Visible texts
-  title: "UTxO Accumulator",
-  subtitle: "Efficient UTxO Management",
+  title: "ENCOINS V2",
+  subtitle: "Private transactions on Cardano",
   labels: {
     useWalletAddress: "Use Wallet Address",
     send: "Send",
@@ -10,28 +10,28 @@ export const BRANDING = {
   },
   // Logo (set to empty string for no logo)
   logoUrl: "logo.svg",
-  logoAlt: "UTxO Accumulator Logo",
+  logoAlt: "ENCOINS V2 Logo",
   networkName: "Preprod",
   // Main style variables
   styles: {
-    primaryColor: "#222", // dark for text and buttons
-    secondaryColor: "#fff", // light background
-    accentColor: "#888", // subtle accent
+    primaryColor: "#fff",
+    secondaryColor: "#000",
+    accentColor: "#b8b8b8",
     fontFamily: "'Poppins', Arial, 'Helvetica Neue', Helvetica, sans-serif",
-    borderRadius: "12px",
-    boxShadow: "0 2px 8px rgba(34,34,34,0.08)",
-    buttonTextColor: "#fff",
-    buttonHoverBg: "#888",
+    borderRadius: "5px",
+    boxShadow: "0 2px 8px rgba(255,255,255,0.08)",
+    buttonTextColor: "#181818",
+    buttonHoverBg: "#181818",
     buttonHoverText: "#fff",
-    buttonBoxShadow: "0 2px 8px rgba(34,34,34,0.12)",
-    buttonHoverBoxShadow: "0 4px 16px rgba(34,34,34,0.18)",
+    buttonBoxShadow: "0 4px 24px rgba(0,224,202,0.15)",
+    buttonHoverBoxShadow: "0 6px 32px rgba(0,224,202,0.25)",
     logoBg: "#fff",
-    logoBoxShadow: "0 2px 8px rgba(34,34,34,0.10)",
-    titleColor: "#222",
-    subtitleColor: "#888",
-    inputBoxShadow: "0 2px 8px rgba(34,34,34,0.08)",
-    inputPlaceholder: "#888",
-    selectCheckedBg: "#e0e0e0",
-    selectHoverBg: "#f0f0f0"
+    logoBoxShadow: "0 2px 12px rgba(0,224,202,0.10)",
+    titleColor: "#f5fbf2",
+    subtitleColor: "#b8b8b8",
+    inputBoxShadow: "0 2px 8px rgba(255,255,255,0.08)",
+    inputPlaceholder: "#b8b8b8",
+    selectCheckedBg: "#444",
+    selectHoverBg: "#222"
   }
 };
