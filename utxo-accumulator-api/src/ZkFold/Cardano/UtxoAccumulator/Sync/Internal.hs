@@ -1,5 +1,6 @@
 module ZkFold.Cardano.UtxoAccumulator.Sync.Internal where
 
+import Data.List (maximumBy)
 import GeniusYield.Types
 import PlutusLedgerApi.V3 (toBuiltinData)
 import PlutusTx.Builtins (ByteOrder (..), serialiseData)
@@ -11,6 +12,9 @@ import ZkFold.Cardano.UPLC.UtxoAccumulator (UtxoAccumulatorRedeemer (..))
 import ZkFold.Cardano.UtxoAccumulator.Sync.Cache (cacheRestore, cacheUpdate)
 import ZkFold.Cardano.UtxoAccumulator.Sync.FetchTx (FetchTxResult (..), fetchTx)
 import ZkFold.Cardano.UtxoAccumulator.Types.Sync (SyncParams (..))
+import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config)
+import ZkFold.Cardano.UtxoAccumulator.Sync.Query (getSyncParams)
+import ZkFold.Cardano.UtxoAccumulator.IO (runQueryWithConfig)
 
 trySync :: SyncParams -> IO (Maybe (GYTxOutRef, UtxoAccumulatorRedeemer))
 trySync SyncParams {..} = do
@@ -43,3 +47,10 @@ fullSync sp@SyncParams {..} = do
   result <- fullSyncInternal sp
   cacheUpdate syncStateRef result
   return result
+
+fullSyncFromConfig :: Config -> [GYTxOutRef] -> IO ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point])
+fullSyncFromConfig cfg refs = do
+  syncParamsList <- runQueryWithConfig cfg $ getSyncParams cfg refs
+  results <- mapM fullSync syncParamsList
+  let compareLen (hs1, _) (hs2, _) = compare (length hs1) (length hs2)
+  return $ if null results then ([], []) else maximumBy compareLen results
