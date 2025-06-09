@@ -1,0 +1,48 @@
+name: Copy UI to Other Repo
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  copy-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: |
+          cd web/ui
+          npm install
+
+      - name: Build UI with Vite
+        run: |
+          cd web/ui
+          npx vite build
+
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: encryptedcoins/encoins-v2
+          token: ${{ secrets.ENCOINS_V2_TOKEN }}
+          path: target-repo
+
+      - name: Copy UI dist to target repo
+        run: |
+          rm -rf target-repo/ui-dist
+          cp -r web/ui/dist target-repo/ui-dist
+
+      - name: Commit and push changes
+        run: |
+          cd target-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ui-dist
+          git commit -m "Update UI distribution from source repo" || echo "No changes to commit"
+          git push
