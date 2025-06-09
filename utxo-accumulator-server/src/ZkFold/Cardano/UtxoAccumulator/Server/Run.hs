@@ -131,5 +131,6 @@ runServer mfp mode = do
                     (Proxy :: Proxy '[AuthHandler Wai.Request ()])
                     (\ioAct -> Handler . ExceptT $ first (apiErrorToServerError . exceptionHandler) <$> try ioAct)
                   $ mainServer rsaKeyPair crs cfg''
-      ModeDistribute removeNoDate ->
+      ModeDistribute removeNoDate -> do
         removeUtxoRun crs cfg'' removeNoDate
+        logInfoS "UTxO Accumulator server finished fund distribution."

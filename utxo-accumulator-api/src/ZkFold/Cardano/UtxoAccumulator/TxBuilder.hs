@@ -1,11 +1,12 @@
 module ZkFold.Cardano.UtxoAccumulator.TxBuilder where
 
 import Control.Monad (unless)
-import Data.Map (delete, insert, toList, (!))
+import Data.Map (delete, insert, toList, (!), keys, filter)
 import Data.Maybe (fromJust)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import GeniusYield.TxBuilder
 import GeniusYield.Types
+import Prelude hiding (filter)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Cardano.UtxoAccumulator.Database (AccumulatorDataItem (..), AccumulatorDataKey (AccumulatorDataKey), UtxoDistributionTime, getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
@@ -65,18 +66,21 @@ addUtxoRun crs cfg@Config {..} sender recipient l r distTime = do
 
 removeUtxoRun :: UtxoAccumulatorCRS -> Config -> Bool -> IO ()
 removeUtxoRun crs cfg@Config {..} removeNoDate = do
-  -- Get the UTXO accumulator data
-  m <- getUtxoAccumulatorData cfgDatabasePath
-  unless (null m) $ do
-    now <- getPOSIXTime
-    cache <- fullSyncFromConfig cfg
+  now <- getPOSIXTime
+  cache <- fullSyncFromConfig cfg
 
+  -- Get the UTXO accumulator data
+  m <- filter (\(AccumulatorDataItem _ mDistTime ttRef) ->
+                ttRef `elem` keys cache && maybe False (\t -> now - t <= 30 * 24 * 3600) mDistTime
+              ) <$> getUtxoAccumulatorData cfgDatabasePath
+  unless (null m) $ do
     -- Find UTxOs eligible for removal
     let eligible =
           [ (recipient, l, r, ttRef)
           | (AccumulatorDataKey recipient l, AccumulatorDataItem r mDistTime ttRef) <- toList m
           , maybe removeNoDate (<= now) mDistTime
-          , utxoAccumulatorAddressHash (addressToPlutus recipient) l `notElem` fst (cache ! ttRef)
+          , utxoAccumulatorHashWrapper (addressToPlutus recipient) l r `elem` fst (cache ! ttRef)
+          , utxoAccumulatorAddressHash (addressToPlutus recipient) l `notElem` snd (cache ! ttRef)
           ]
     case eligible of
       [] -> return () -- No eligible UTxOs to remove at this time
