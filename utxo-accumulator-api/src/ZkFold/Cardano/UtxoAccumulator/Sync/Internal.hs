@@ -53,8 +53,8 @@ fullSync sp@SyncParams {..} = do
 
 fullSyncFromConfig :: Config -> IO Cache
 fullSyncFromConfig cfg@Config {..} = do
-  syncParamsList <- runQueryWithConfig cfg $ getSyncParams cfg cfgThreadTokenRefs
-  fromList <$> mapM (\sp -> do r <- fullSync sp; return (syncStateRef sp, r)) syncParamsList
+  syncParamsList <- zip cfgThreadTokenRefs <$> runQueryWithConfig cfg (getSyncParams cfg cfgThreadTokenRefs)
+  fromList <$> mapM (\(ref, sp) -> do r <- fullSync sp; return (ref, r)) syncParamsList
 
 threadTokenRefFromSync :: Config -> IO (Maybe GYTxOutRef)
 threadTokenRefFromSync cfg = do
