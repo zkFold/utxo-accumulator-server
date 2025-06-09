@@ -50,7 +50,7 @@ utxoAccumulatorTests setup =
                   , cfgDatabasePath = "database/txs.json"
                   , cfgAccumulationValue = valueFromLovelace 100_000_000
                   , cfgMaybeScriptRef = Nothing
-                  , cfgMaybeThreadTokenRef = Nothing
+                  , cfgThreadTokenRefs = []
                   }
 
           crs <- utxoAccumulatorCRS

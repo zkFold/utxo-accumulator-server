@@ -33,19 +33,23 @@ import ZkFold.Symbolic.Examples.UtxoAccumulator (
   utxoAccumulatorProve,
  )
 
+utxoAccumulatorAddressHash ::
+  Address ->
+  ScalarFieldOf BLS12_381_G1_Point ->
+  ScalarFieldOf BLS12_381_G1_Point
+utxoAccumulatorAddressHash addr l = toZp
+  $ byteStringToInteger BigEndian
+  $ blake2b_224
+  $ serialiseData
+  $ toBuiltinData (addr, convertZp l)
+
 utxoAccumulatorHashWrapper ::
   Address ->
   ScalarFieldOf BLS12_381_G1_Point ->
   ScalarFieldOf BLS12_381_G1_Point ->
   ScalarFieldOf BLS12_381_G1_Point
 utxoAccumulatorHashWrapper addr l r =
-  let a =
-        toZp
-          $ byteStringToInteger BigEndian
-          $ blake2b_224
-          $ serialiseData
-          $ toBuiltinData
-            (addr, convertZp l)
+  let a = utxoAccumulatorAddressHash addr l
    in utxoAccumulatorHash a r
 
 mkAddUtxo ::
@@ -79,13 +83,7 @@ mkRemoveUtxo crs dat hs as addr l r =
   let Datum d = datumToPlutus dat
       (datumAdd, UtxoAccumulatorDatum {..}, setup) = unsafeFromBuiltinData d :: (UtxoAccumulatorDatum, UtxoAccumulatorDatum, SetupBytes)
 
-      a' =
-        byteStringToInteger BigEndian
-          $ blake2b_224
-          $ serialiseData
-          $ toBuiltinData
-            (addr, convertZp l)
-      a = toZp a'
+      a = utxoAccumulatorAddressHash addr l
 
       n = value @N
       hs' = hs ++ replicate (n -! length hs) zero
@@ -94,6 +92,6 @@ mkRemoveUtxo crs dat hs as addr l r =
       (_, proof) = utxoAccumulatorProve @N @M crs hs' as' a r
 
       d' = removeDatumFromHash crs nextDatumHash
-      setup' = updateSetupBytes setup a' $ fromJust maybeCurrentGroupElement
+      setup' = updateSetupBytes setup (convertZp a) $ fromJust maybeCurrentGroupElement
       dat' = datumFromPlutusData $ toBuiltinData (datumAdd, d', setup')
    in (dat', redeemerFromPlutusData $ RemoveUtxo addr (convertZp l) (mkProof proof) d')

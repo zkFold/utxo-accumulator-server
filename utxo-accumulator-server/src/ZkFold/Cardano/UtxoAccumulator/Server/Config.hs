@@ -66,7 +66,7 @@ data ServerConfig = ServerConfig
   , scWallet :: !ServerWallet
   , scAccumulationValue :: !Integer
   , scMaybeScriptRef :: !(Maybe GYTxOutRef)
-  , scMaybeThreadTokenRef :: !(Maybe GYTxOutRef)
+  , scThreadTokenRefs :: ![GYTxOutRef]
   }
   deriving stock Generic
   deriving
@@ -138,17 +138,17 @@ signingKeysFromServerWallet nid (KeyPathWallet fp) = do
             AGYExtendedStakeSigningKey skey' -> getExtendedVerificationKey skey' & extendedVerificationKeyHash
      in addressFromCredential nid (GYPaymentCredentialByKey pkh) (Just $ GYStakeCredentialByKey skh)
 
--- | Update config.yaml with new maybeScriptRef and maybeThreadTokenRef values.
-updateConfigYaml :: FilePath -> Maybe GYTxOutRef -> Maybe GYTxOutRef -> IO ()
-updateConfigYaml configPath mScriptRef mThreadTokenRef = do
+-- | Update config.yaml with new maybeScriptRef and threadTokenRefs values.
+updateConfigYaml :: FilePath -> Maybe GYTxOutRef -> [GYTxOutRef] -> IO ()
+updateConfigYaml configPath mScriptRef threadTokenRefs = do
   mVal <-
     Yaml.decodeFileEither configPath >>= \case
       Left _ -> return Nothing
       Right v -> return (Just v)
-  let updateField k = maybe id (KeyMap.insert k . toJSON)
+  let updateField k = KeyMap.insert k . toJSON
       obj = fromMaybe KeyMap.empty mVal
       newObj =
         updateField "maybeScriptRef" mScriptRef $
-          updateField "maybeThreadTokenRef" mThreadTokenRef obj
+          updateField "threadTokenRefs" threadTokenRefs obj
   withFile configPath WriteMode $ \h ->
     B.hPut h (YamlPretty.encodePretty YamlPretty.defConfig newObj)

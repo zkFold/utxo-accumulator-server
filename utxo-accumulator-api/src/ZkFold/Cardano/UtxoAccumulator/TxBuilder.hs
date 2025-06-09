@@ -1,24 +1,19 @@
 module ZkFold.Cardano.UtxoAccumulator.TxBuilder where
 
 import Control.Monad (unless)
-import Data.Map (delete, insert, toList)
+import Data.Map (delete, insert, toList, (!))
 import Data.Maybe (fromJust)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import GeniusYield.TxBuilder
 import GeniusYield.Types
-import PlutusLedgerApi.V3 (toBuiltinData)
-import PlutusTx.Builtins (ByteOrder (..), blake2b_224, byteStringToInteger, serialiseData)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
-import ZkFold.Algebra.Field (toZp)
-import ZkFold.Cardano.UtxoAccumulator.Constants (threadToken)
 import ZkFold.Cardano.UtxoAccumulator.Database (AccumulatorDataItem (..), AccumulatorDataKey (AccumulatorDataKey), UtxoDistributionTime, getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
 import ZkFold.Cardano.UtxoAccumulator.IO (runBuilderWithConfig, runQueryWithConfig, runSignerWithConfig)
-import ZkFold.Cardano.UtxoAccumulator.Sync (fullSync, getState)
-import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper)
+import ZkFold.Cardano.UtxoAccumulator.Sync (threadTokenRefFromSync, fullSyncFromConfig)
+import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper, utxoAccumulatorAddressHash)
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (addUtxo, initAccumulator, postScript, removeUtxo)
 import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
-import ZkFold.Cardano.UtxoAccumulator.Types.Sync (SyncParams (..))
 import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS)
 
 postScriptRun ::
@@ -44,7 +39,7 @@ initAccumulatorRun crs cfg@Config {..} = do
     (txSkel, ref) <- initAccumulator crs cfgAddress cfgAccumulationValue
     txBody <- buildTxBody txSkel
     submitTxBodyConfirmed_ txBody [cfgPaymentKey]
-    return $ cfg {cfgMaybeThreadTokenRef = Just ref}
+    return $ cfg {cfgThreadTokenRefs = ref : cfgThreadTokenRefs}
 
 addUtxoRun ::
   UtxoAccumulatorCRS ->
@@ -58,13 +53,14 @@ addUtxoRun ::
 addUtxoRun crs cfg@Config {..} sender recipient l r distTime = do
   -- Update the UTXO accumulator data
   m <- getUtxoAccumulatorData cfgDatabasePath
+  ref <- fromJust <$> threadTokenRefFromSync cfg
   let key = AccumulatorDataKey recipient l
-      item = AccumulatorDataItem r distTime (fromJust cfgMaybeThreadTokenRef)
+      item = AccumulatorDataItem r distTime ref
   putUtxoAccumulatorData cfgDatabasePath $ insert key item m
 
   -- Build the transaction skeleton
   runBuilderWithConfig cfg sender $ do
-    txSkel <- addUtxo crs cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) cfgAddress recipient l r
+    txSkel <- addUtxo crs cfgAccumulationValue (fromJust cfgMaybeScriptRef) ref cfgAddress recipient l r
     unsignedTx <$> buildTxBody txSkel
 
 removeUtxoRun :: UtxoAccumulatorCRS -> Config -> Bool -> IO ()
@@ -72,35 +68,26 @@ removeUtxoRun crs cfg@Config {..} removeNoDate = do
   -- Get the UTXO accumulator data
   m <- getUtxoAccumulatorData cfgDatabasePath
   unless (null m) $ do
-    stateRef <- runQueryWithConfig cfg $ fromJust <$> getState (threadToken $ fromJust cfgMaybeThreadTokenRef)
-    let sp =
-          SyncParams
-            { syncgNetworkId = cfgNetworkId
-            , syncMaestroToken = cfgMaestroToken
-            , syncThreadToken = threadToken $ fromJust cfgMaybeThreadTokenRef
-            , syncStateRef = stateRef
-            }
-    (hs, as) <- fullSync sp
     now <- getPOSIXTime
+    cache <- fullSyncFromConfig cfg
 
     -- Find UTxOs eligible for removal
     let eligible =
-          [ (recipient, l, r)
+          [ (recipient, l, r, ttRef)
           | (AccumulatorDataKey recipient l, AccumulatorDataItem r mDistTime ttRef) <- toList m
-          , ttRef == fromJust cfgMaybeThreadTokenRef
           , maybe removeNoDate (<= now) mDistTime
-          , toZp (byteStringToInteger BigEndian $ blake2b_224 $ serialiseData $ toBuiltinData $ addressToPlutus recipient) `notElem` as
+          , utxoAccumulatorAddressHash (addressToPlutus recipient) l `notElem` fst (cache ! ttRef)
           ]
     case eligible of
       [] -> return () -- No eligible UTxOs to remove at this time
-      ((recipient, l, r) : _) -> do
-        let (hs', as') = case cfgMaestroToken of
+      ((recipient, l, r, ttRef) : _) -> do
+        let (hs, as) = case cfgMaestroToken of
               "" -> ([utxoAccumulatorHashWrapper (addressToPlutus recipient) l r], [])
-              _ -> (hs, as)
+              _ -> cache ! ttRef
 
         -- Build, sign, and submit the transaction
         runSignerWithConfig cfg $ do
-          txSkel <- removeUtxo crs cfgAccumulationValue (fromJust cfgMaybeScriptRef) (fromJust cfgMaybeThreadTokenRef) hs' as' recipient l r
+          txSkel <- removeUtxo crs cfgAccumulationValue (fromJust cfgMaybeScriptRef) ttRef hs as recipient l r
           txBody <- buildTxBody txSkel
           submitTxBodyConfirmed_ txBody [cfgPaymentKey]
 

@@ -13,5 +13,5 @@ data Config = Config
   , cfgAddress :: GYAddress
   , cfgAccumulationValue :: GYValue
   , cfgMaybeScriptRef :: Maybe GYTxOutRef
-  , cfgMaybeThreadTokenRef :: Maybe GYTxOutRef
+  , cfgThreadTokenRefs :: [GYTxOutRef]
   }

@@ -9,12 +9,17 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Field (toZp)
 import ZkFold.Cardano.UPLC.UtxoAccumulator (UtxoAccumulatorRedeemer (..))
-import ZkFold.Cardano.UtxoAccumulator.Sync.Cache (cacheRestore, cacheUpdate)
+import ZkFold.Cardano.UtxoAccumulator.Sync.Cache (cacheRestore, cacheUpdate, Cache)
 import ZkFold.Cardano.UtxoAccumulator.Sync.FetchTx (FetchTxResult (..), fetchTx)
 import ZkFold.Cardano.UtxoAccumulator.Types.Sync (SyncParams (..))
-import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config)
+import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
 import ZkFold.Cardano.UtxoAccumulator.Sync.Query (getSyncParams)
 import ZkFold.Cardano.UtxoAccumulator.IO (runQueryWithConfig)
+import ZkFold.Cardano.UtxoAccumulator.Constants (N)
+import ZkFold.Algebra.Number (value)
+import Prelude hiding (length)
+import ZkFold.Prelude (length)
+import Data.Map (fromList, toList)
 
 trySync :: SyncParams -> IO (Maybe (GYTxOutRef, UtxoAccumulatorRedeemer))
 trySync SyncParams {..} = do
@@ -48,9 +53,17 @@ fullSync sp@SyncParams {..} = do
   cacheUpdate syncStateRef result
   return result
 
-fullSyncFromConfig :: Config -> [GYTxOutRef] -> IO ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point])
-fullSyncFromConfig cfg refs = do
-  syncParamsList <- runQueryWithConfig cfg $ getSyncParams cfg refs
-  results <- mapM fullSync syncParamsList
-  let compareLen (hs1, _) (hs2, _) = compare (length hs1) (length hs2)
-  return $ if null results then ([], []) else maximumBy compareLen results
+fullSyncFromConfig :: Config -> IO Cache
+fullSyncFromConfig cfg@Config {..} = do
+  syncParamsList <- runQueryWithConfig cfg $ getSyncParams cfg cfgThreadTokenRefs
+  fromList <$> mapM (\sp -> do r <- fullSync sp; return (syncStateRef sp, r)) syncParamsList
+
+threadTokenRefFromSync :: Config -> IO (Maybe GYTxOutRef)
+threadTokenRefFromSync cfg = do
+  results <- toList <$> fullSyncFromConfig cfg
+  let filtered = filter ((< value @N) . length . fst . snd) results
+  return $ if null filtered
+    then Nothing
+    else Just $ fst $ maximumBy (\(_, (hs1, _)) (_, (hs2, _)) -> compare (length hs1) (length hs2)) filtered
+
+

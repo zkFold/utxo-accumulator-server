@@ -34,6 +34,7 @@ import ZkFold.Cardano.UtxoAccumulator.Server.RequestLoggerMiddleware (gcpReqLogg
 import ZkFold.Cardano.UtxoAccumulator.Server.Utils
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder (initAccumulatorRun, postScriptRun, removeUtxoRun)
 import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
+import ZkFold.Cardano.UtxoAccumulator.Sync (threadTokenRefFromSync)
 
 data Mode = ModeAccumulate | ModeDistribute Bool
   deriving (Eq, Show)
@@ -84,7 +85,7 @@ runServer mfp mode = do
           , cfgDatabasePath = scDatabasePath
           , cfgAccumulationValue = valueFromLovelace scAccumulationValue
           , cfgMaybeScriptRef = scMaybeScriptRef
-          , cfgMaybeThreadTokenRef = scMaybeThreadTokenRef
+          , cfgThreadTokenRefs = scThreadTokenRefs
           }
 
     crs <- utxoAccumulatorCRS
@@ -98,15 +99,16 @@ runServer mfp mode = do
         else return cfg
 
     -- Checking if the accumulator is initialized
+    mRef <- threadTokenRefFromSync cfg'
     cfg'' <-
-      if isNothing scMaybeThreadTokenRef
+      if isNothing mRef
         then do
           logInfoS "Initializing the UTxO Accumulator..."
           initAccumulatorRun crs cfg'
         else return cfg'
 
     -- Update config.yaml with maybeScriptRef and maybeThreadTokenRef values
-    updateConfigYaml "config.yaml" (cfgMaybeScriptRef cfg') (cfgMaybeThreadTokenRef cfg'')
+    updateConfigYaml "config.yaml" (cfgMaybeScriptRef cfg') (cfgThreadTokenRefs cfg'')
 
     case mode of
       ModeAccumulate -> do
