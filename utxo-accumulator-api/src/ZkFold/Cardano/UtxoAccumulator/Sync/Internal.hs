@@ -3,7 +3,6 @@ module ZkFold.Cardano.UtxoAccumulator.Sync.Internal where
 import Data.List (maximumBy)
 import Data.Map (fromList, toList)
 import GeniusYield.Types
-import Prelude hiding (length)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Field (toZp)
@@ -18,6 +17,7 @@ import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorAddressHash)
 import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
 import ZkFold.Cardano.UtxoAccumulator.Types.Sync (SyncParams (..))
 import ZkFold.Prelude (length)
+import Prelude hiding (length)
 
 trySync :: SyncParams -> IO (Maybe (GYTxOutRef, UtxoAccumulatorRedeemer))
 trySync SyncParams {..} = do

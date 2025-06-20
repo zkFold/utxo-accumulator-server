@@ -62,8 +62,8 @@ protocolStakingCredential =
 
 -- Utxo Accumulator
 
-type N = 10
-type M = 1024
+type N = 3
+type M = 2048
 
 -- type N = 1024
 -- type M = 16384
