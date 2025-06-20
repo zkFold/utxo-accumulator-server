@@ -30,7 +30,7 @@ const removalOptions = [
   { label: '1 hour from now', value: '3600', default: true },
   { label: '1 day from now', value: String(24 * 3600) },
   { label: '1 week from now', value: String(7 * 24 * 3600) },
-  { label: 'No timer (removed manually)', value: '' },
+  { label: 'No timer', value: '' },
 ];
 removalOptions.forEach(opt => {
   const option = document.createElement('option');

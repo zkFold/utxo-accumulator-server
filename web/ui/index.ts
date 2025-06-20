@@ -107,7 +107,7 @@ fillAddrBtn.onclick = async () => {
       const bech32 = hexToBech32(addrHex);
       if (bech32) addressInputGrid.value = bech32;
     }
-  } catch {}
+  } catch { }
 };
 
 sendBtn.onclick = async () => {
@@ -124,7 +124,7 @@ sendBtn.onclick = async () => {
       const bech32 = hexToBech32(addrHex);
       if (bech32) senderAddress = bech32;
     }
-  } catch {}
+  } catch { }
   if (!senderAddress || !isValidPreprodBech32Address(senderAddress)) {
     setResultMessage(resultDivGrid, 'Could not get a valid Cardano (Preprod testnet) address from the wallet.');
     return;
@@ -179,6 +179,12 @@ amountSelect.onchange = () => {
   const selectedAmount = Number(amountSelect.value);
   rebuildServerDropdown(selectedAmount);
 };
+
+removalTimeSelect.addEventListener('change', () => {
+  if (removalTimeSelect.value === '') {
+    window.alert('Warning: You have selected "No timer". This means the transaction will not be processed automatically. You must have access to the relay server to complete the transaction.');
+  }
+});
 
 (async () => {
   await fetchAllServerSettings();
