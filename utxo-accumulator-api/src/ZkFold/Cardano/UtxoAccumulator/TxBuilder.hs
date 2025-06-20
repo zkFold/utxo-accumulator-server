@@ -1,12 +1,11 @@
 module ZkFold.Cardano.UtxoAccumulator.TxBuilder where
 
 import Control.Monad (unless)
-import Data.Map (delete, insert, toList, (!), keys, filter)
+import Data.Map (delete, filter, insert, keys, toList, (!))
 import Data.Maybe (fromJust)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import GeniusYield.TxBuilder
 import GeniusYield.Types
-import Prelude hiding (filter)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Cardano.UtxoAccumulator.Database (AccumulatorDataItem (..), AccumulatorDataKey (AccumulatorDataKey), UtxoDistributionTime, getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
@@ -16,6 +15,7 @@ import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorAddressHash, ut
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder.Internal (addUtxo, initAccumulator, postScript, removeUtxo)
 import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
 import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS)
+import Prelude hiding (filter)
 
 postScriptRun ::
   Config ->
@@ -70,9 +70,12 @@ removeUtxoRun crs cfg@Config {..} removeNoDate = do
   cache <- fullSyncFromConfig cfg
 
   -- Get the UTXO accumulator data
-  m <- filter (\(AccumulatorDataItem _ mDistTime ttRef) ->
-                ttRef `elem` keys cache && maybe False (\t -> now - t <= 30 * 24 * 3600) mDistTime
-              ) <$> getUtxoAccumulatorData cfgDatabasePath
+  m <-
+    filter
+      ( \(AccumulatorDataItem _ mDistTime ttRef) ->
+          ttRef `elem` keys cache && maybe False (\t -> now - t <= 30 * 24 * 3600) mDistTime
+      )
+      <$> getUtxoAccumulatorData cfgDatabasePath
   unless (null m) $ do
     -- Find UTxOs eligible for removal
     let eligible =
