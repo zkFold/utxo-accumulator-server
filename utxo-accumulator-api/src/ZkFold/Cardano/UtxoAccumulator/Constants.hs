@@ -44,7 +44,7 @@ scriptParkingAddress =
 -- Protocol parameters
 
 serverFee :: GYValue
-serverFee = valueFromLovelace 5_000_000
+serverFee = valueFromLovelace 3_000_000
 
 protocolFee :: GYValue
 protocolFee = valueFromLovelace 1_000_000
@@ -62,11 +62,11 @@ protocolStakingCredential =
 
 -- Utxo Accumulator
 
-type N = 3
-type M = 2048
+-- type N = 3
+-- type M = 2048
 
--- type N = 1024
--- type M = 16384
+type N = 1024
+type M = 16384
 
 utxoAccumulatorParameters :: GYValue -> UtxoAccumulatorParameters
 utxoAccumulatorParameters = valueToPlutus
