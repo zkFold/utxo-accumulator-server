@@ -8,7 +8,7 @@ import GeniusYield.TxBuilder
 import GeniusYield.Types
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
-import ZkFold.Cardano.UtxoAccumulator.Database (AccumulatorDataItem (..), AccumulatorDataKey (AccumulatorDataKey), UtxoDistributionTime, getUtxoAccumulatorData, putUtxoAccumulatorData, removeUtxoAccumulatorData)
+import ZkFold.Cardano.UtxoAccumulator.Database (AccumulatorDataItem (..), AccumulatorDataKey (AccumulatorDataKey), UtxoDistributionTime, getUtxoAccumulatorData, putUtxoAccumulatorData)
 import ZkFold.Cardano.UtxoAccumulator.IO (runBuilderWithConfig, runQueryWithConfig, runSignerWithConfig)
 import ZkFold.Cardano.UtxoAccumulator.Sync (fullSyncFromConfig, threadTokenRefFromSync)
 import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorAddressHash, utxoAccumulatorHashWrapper)
@@ -34,13 +34,11 @@ initAccumulatorRun ::
   UtxoAccumulatorCRS ->
   Config ->
   IO Config
-initAccumulatorRun crs cfg@Config {..} = do
-  removeUtxoAccumulatorData cfgDatabasePath
-  runSignerWithConfig cfg $ do
-    (txSkel, ref) <- initAccumulator crs cfgAddress cfgAccumulationValue
-    txBody <- buildTxBody txSkel
-    submitTxBodyConfirmed_ txBody [cfgPaymentKey]
-    return $ cfg {cfgThreadTokenRefs = ref : cfgThreadTokenRefs}
+initAccumulatorRun crs cfg@Config {..} = runSignerWithConfig cfg $ do
+  (txSkel, ref) <- initAccumulator crs cfgAddress cfgAccumulationValue
+  txBody <- buildTxBody txSkel
+  submitTxBodyConfirmed_ txBody [cfgPaymentKey]
+  return $ cfg {cfgThreadTokenRefs = ref : cfgThreadTokenRefs}
 
 addUtxoRun ::
   UtxoAccumulatorCRS ->
@@ -54,15 +52,18 @@ addUtxoRun ::
 addUtxoRun crs cfg@Config {..} sender recipient l r distTime = do
   -- Update the UTXO accumulator data
   m <- getUtxoAccumulatorData cfgDatabasePath
-  ref <- fromJust <$> threadTokenRefFromSync cfg
-  let key = AccumulatorDataKey recipient l
-      item = AccumulatorDataItem r distTime ref
-  putUtxoAccumulatorData cfgDatabasePath $ insert key item m
+  mRef <- threadTokenRefFromSync cfg
+  case mRef of
+    Nothing -> error "No thread token available."
+    Just ref -> do
+      let key = AccumulatorDataKey recipient l
+          item = AccumulatorDataItem r distTime ref
+      putUtxoAccumulatorData cfgDatabasePath $ insert key item m
 
-  -- Build the transaction skeleton
-  runBuilderWithConfig cfg sender $ do
-    txSkel <- addUtxo crs cfgAccumulationValue (fromJust cfgMaybeScriptRef) ref cfgAddress recipient l r
-    unsignedTx <$> buildTxBody txSkel
+      -- Build the transaction skeleton
+      runBuilderWithConfig cfg sender $ do
+        txSkel <- addUtxo crs cfgAccumulationValue (fromJust cfgMaybeScriptRef) ref cfgAddress recipient l r
+        unsignedTx <$> buildTxBody txSkel
 
 removeUtxoRun :: UtxoAccumulatorCRS -> Config -> Bool -> IO ()
 removeUtxoRun crs cfg@Config {..} removeNoDate = do
@@ -72,8 +73,8 @@ removeUtxoRun crs cfg@Config {..} removeNoDate = do
   -- Get the UTXO accumulator data
   m <-
     filter
-      ( \(AccumulatorDataItem _ mDistTime ttRef) ->
-          ttRef `elem` keys cache && maybe False (\t -> now - t <= 30 * 24 * 3600) mDistTime
+      ( \(AccumulatorDataItem _ _ ttRef) ->
+          ttRef `elem` keys cache
       )
       <$> getUtxoAccumulatorData cfgDatabasePath
   unless (null m) $ do
