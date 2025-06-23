@@ -226,7 +226,7 @@ export function initUILayout() {
     emailLink.style.color = '#fff';
     emailLink.style.textDecoration = 'underline';
     emailLink.textContent = footerBranding.email;
-    footer.appendChild(document.createTextNode(' | To become a relayer, use '));
+    footer.appendChild(document.createTextNode(' | To become a relayer, contact '));
     footer.appendChild(emailLink);
 
     // --- Add Download Saved Transactions link to footer ---
