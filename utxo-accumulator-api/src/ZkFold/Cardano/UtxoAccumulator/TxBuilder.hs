@@ -43,27 +43,24 @@ initAccumulatorRun crs cfg@Config {..} = runSignerWithConfig cfg $ do
 addUtxoRun ::
   UtxoAccumulatorCRS ->
   Config ->
+  GYTxOutRef -> -- current thread token reference
   GYAddress -> -- sender
   GYAddress -> -- recipient
   ScalarFieldOf BLS12_381_G1_Point ->
   ScalarFieldOf BLS12_381_G1_Point ->
   UtxoDistributionTime ->
   IO GYTx
-addUtxoRun crs cfg@Config {..} sender recipient l r distTime = do
+addUtxoRun crs cfg@Config {..} ref sender recipient l r distTime = do
   -- Update the UTXO accumulator data
   m <- getUtxoAccumulatorData cfgDatabasePath
-  mRef <- threadTokenRefFromSync cfg
-  case mRef of
-    Nothing -> error "No thread token available."
-    Just ref -> do
-      let key = AccumulatorDataKey recipient l
-          item = AccumulatorDataItem r distTime ref
-      putUtxoAccumulatorData cfgDatabasePath $ insert key item m
+  let key = AccumulatorDataKey recipient l
+      item = AccumulatorDataItem r distTime ref
+  putUtxoAccumulatorData cfgDatabasePath $ insert key item m
 
-      -- Build the transaction skeleton
-      runBuilderWithConfig cfg sender $ do
-        txSkel <- addUtxo crs cfgAccumulationValue (fromJust cfgMaybeScriptRef) ref cfgAddress recipient l r
-        unsignedTx <$> buildTxBody txSkel
+  -- Build the transaction skeleton
+  runBuilderWithConfig cfg sender $ do
+    txSkel <- addUtxo crs cfgAccumulationValue (fromJust cfgMaybeScriptRef) ref cfgAddress recipient l r
+    unsignedTx <$> buildTxBody txSkel
 
 removeUtxoRun :: UtxoAccumulatorCRS -> Config -> Bool -> IO ()
 removeUtxoRun crs cfg@Config {..} removeNoDate = do

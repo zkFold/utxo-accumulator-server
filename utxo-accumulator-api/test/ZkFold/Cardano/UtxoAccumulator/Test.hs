@@ -81,7 +81,7 @@ utxoAccumulatorTests setup =
               l = toZp 21
               r = toZp 42
           -- Default: no scheduled removal
-          tx <- addUtxoRun crs cfg'' sender recipient l r Nothing
+          tx <- addUtxoRun crs cfg'' (head $ cfgThreadTokenRefs cfg'') sender recipient l r Nothing
 
           -- User signs and submits the transaction
           runSignerWithConfig

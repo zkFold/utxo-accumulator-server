@@ -106,6 +106,7 @@ runServer mfp mode = do
           logInfoS "Initializing the UTxO Accumulator..."
           initAccumulatorRun crs cfg'
         else return cfg'
+    ref <- fromJust <$> threadTokenRefFromSync cfg''
 
     -- Update config.yaml with maybeScriptRef and maybeThreadTokenRef values
     updateConfigYaml "config.yaml" (cfgMaybeScriptRef cfg') (cfgThreadTokenRefs cfg'')
@@ -130,7 +131,7 @@ runServer mfp mode = do
                     mainAPI
                     (Proxy :: Proxy '[AuthHandler Wai.Request ()])
                     (\ioAct -> Handler . ExceptT $ first (apiErrorToServerError . exceptionHandler) <$> try ioAct)
-                  $ mainServer rsaKeyPair crs cfg''
+                  $ mainServer rsaKeyPair crs cfg'' ref
       ModeDistribute removeNoDate -> do
         removeUtxoRun crs cfg'' removeNoDate
         logInfoS "UTxO Accumulator server finished fund distribution."

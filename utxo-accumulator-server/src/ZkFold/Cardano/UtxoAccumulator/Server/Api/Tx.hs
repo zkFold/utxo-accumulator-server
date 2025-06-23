@@ -72,10 +72,11 @@ type TransactionAPI = Summary "Transaction" :> Description "Build a UTxO Accumul
 handleTransaction ::
   UtxoAccumulatorCRS ->
   Config ->
+  GYTxOutRef ->
   RSAKeyPair ->
   EncryptedTransaction ->
   IO GYTx
-handleTransaction crs cfg rsaKeyPair (EncryptedTransaction b64) = do
+handleTransaction crs cfg ref rsaKeyPair (EncryptedTransaction b64) = do
   logInfo cfg "Transaction API requested (encrypted)."
   case B64.decode (BS.pack b64) >>= decryptWithPrivateKey rsaKeyPair >>= eitherDecodeStrict of
     Left err -> fail $ "Transaction decode failed: " ++ err
@@ -83,6 +84,7 @@ handleTransaction crs cfg rsaKeyPair (EncryptedTransaction b64) = do
       addUtxoRun
         crs
         cfg
+        ref
         (addressFromBech32 txSender)
         (addressFromBech32 txRecipient)
         (fromConstant txNonceL)

@@ -13,6 +13,7 @@ import Data.Kind (Type)
 import Data.OpenApi
 import Data.OpenApi qualified as OpenApi
 import GeniusYield.Imports ((&))
+import GeniusYield.Types (GYTxOutRef)
 import GeniusYield.Types.OpenApi ()
 import Servant
 import Servant.OpenApi
@@ -60,11 +61,11 @@ utxoAccumulatorAPIOpenApi =
       & applyTagsFor (subOperations (Proxy :: Proxy ("settings" +> SettingsAPI)) (Proxy :: Proxy UtxoAccumulatorAPI)) ["Settings" & OpenApi.description ?~ "Endpoint to get server settings such as network and version"]
       & applyTagsFor (subOperations (Proxy :: Proxy ("transaction" +> TransactionAPI)) (Proxy :: Proxy UtxoAccumulatorAPI)) ["Transaction" & OpenApi.description ?~ "Endpoint to make a transaction using the UTxO Accumulator"]
 
-utxoAccumulatorServer :: RSAKeyPair -> UtxoAccumulatorCRS -> Config -> ServerT UtxoAccumulatorAPI IO
-utxoAccumulatorServer rsaKeyPair crs cfg =
+utxoAccumulatorServer :: RSAKeyPair -> UtxoAccumulatorCRS -> Config -> GYTxOutRef -> ServerT UtxoAccumulatorAPI IO
+utxoAccumulatorServer rsaKeyPair crs cfg ref =
   ignoredAuthResult $
-    handleSettings rsaKeyPair cfg
-      :<|> handleTransaction crs cfg rsaKeyPair
+    handleSettings rsaKeyPair cfg ref
+      :<|> handleTransaction crs cfg ref rsaKeyPair
  where
   ignoredAuthResult f _authResult = f
 
@@ -74,5 +75,5 @@ type MainAPI =
 mainAPI :: Proxy MainAPI
 mainAPI = Proxy
 
-mainServer :: RSAKeyPair -> UtxoAccumulatorCRS -> Config -> ServerT MainAPI IO
+mainServer :: RSAKeyPair -> UtxoAccumulatorCRS -> Config -> GYTxOutRef -> ServerT MainAPI IO
 mainServer = utxoAccumulatorServer
