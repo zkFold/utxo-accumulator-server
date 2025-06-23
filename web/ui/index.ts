@@ -3,7 +3,7 @@ import { BRANDING } from './branding';
 import { wallets, getWalletApi, getWalletAnyAddress, hexToBech32, signAndSubmitTxWithWallet, WalletApi, WalletInfo } from './wallet';
 import { serverBases, fetchAllServerSettings, sendTransaction, serverSettings } from './api';
 import { parseAccumulationValue, setResultMessage, clearResultMessage, isValidPreprodBech32Address, randomBlsScalarHex, saveTransaction } from './utils';
-import { walletSelect, serverSelect, amountSelect, addressInputGrid, fillAddrBtn, sendBtn, resultDivGrid, title, subtitle, initUILayout, removalTimeSelect, downloadTxsBtn } from './ui';
+import { walletSelect, serverSelect, amountSelect, addressInputGrid, fillAddrBtn, sendBtn, resultDivGrid, title, subtitle, initUILayout, removalTimeSelect } from './ui';
 
 // Set up branding: logo, title, styles, and labels
 document.title = BRANDING.title;
@@ -186,26 +186,6 @@ removalTimeSelect.addEventListener('change', () => {
     window.alert('Warning: You have selected "No timer". This means the transaction will not be processed automatically. You must have access to the relay server to complete the transaction.');
   }
 });
-
-downloadTxsBtn.onclick = () => {
-  const key = 'transactions';
-  let saved: any[] = [];
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw) saved = JSON.parse(raw);
-  } catch { }
-  const blob = new Blob([JSON.stringify(saved, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `transactions-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 0);
-};
 
 (async () => {
   await fetchAllServerSettings();

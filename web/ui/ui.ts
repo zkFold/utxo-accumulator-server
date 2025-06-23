@@ -56,26 +56,6 @@ export const sendBtn = document.createElement('button');
 sendBtn.type = 'button';
 sendBtn.textContent = BRANDING.labels.send || 'Send';
 
-export const downloadTxsBtn = document.createElement('button');
-downloadTxsBtn.type = 'button';
-downloadTxsBtn.title = 'Download all saved transaction requests as a JSON file.';
-
-// Add SVG download icon
-const downloadIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-downloadIcon.setAttribute('width', '18');
-downloadIcon.setAttribute('height', '18');
-downloadIcon.setAttribute('viewBox', '0 0 20 20');
-downloadIcon.setAttribute('fill', 'none');
-downloadIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-downloadIcon.style.verticalAlign = 'middle';
-downloadIcon.style.marginRight = '0.5em';
-downloadIcon.innerHTML = `
-  <path d="M10 2v10m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="4" y="16" width="12" height="2" rx="1" fill="currentColor"/>
-`;
-downloadTxsBtn.appendChild(downloadIcon);
-downloadTxsBtn.appendChild(document.createTextNode(BRANDING.labels.downloadTxs || 'Download Saved Transactions'));
-
 export const resultDivGrid = document.createElement('div');
 resultDivGrid.id = 'result';
 resultDivGrid.style.marginTop = '1em';
@@ -200,6 +180,11 @@ export function initUILayout() {
   buttonRowGrid.appendChild(fillAddrBtn);
   buttonRowGrid.appendChild(sendBtn);
   formGrid.appendChild(buttonRowGrid);
+
+  // Result row (empty label for alignment)
+  const emptyLabelResultGrid = document.createElement('div');
+  formGrid.appendChild(emptyLabelResultGrid);
+  formGrid.appendChild(resultDivGrid);
 
   container.appendChild(formGrid);
   pageContainer.appendChild(container);
