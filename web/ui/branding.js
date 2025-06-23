@@ -33,5 +33,9 @@ export const BRANDING = {
     inputPlaceholder: "#b8b8b8",
     selectCheckedBg: "#444",
     selectHoverBg: "#222"
+  },
+  footer: {
+    copyright: "© 2025 ENCOINS",
+    email: "team@encoins.io"
   }
 };

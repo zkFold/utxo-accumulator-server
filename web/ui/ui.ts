@@ -201,25 +201,62 @@ export function initUILayout() {
   buttonRowGrid.appendChild(sendBtn);
   formGrid.appendChild(buttonRowGrid);
 
-  // Download Transactions button row (empty label for alignment)
-  const emptyLabelDownloadGrid = document.createElement('div');
-  formGrid.appendChild(emptyLabelDownloadGrid);
-  const downloadBtnRowGrid = document.createElement('div');
-  downloadBtnRowGrid.style.display = 'flex';
-  downloadBtnRowGrid.style.alignItems = 'center';
-  downloadBtnRowGrid.style.marginTop = '1em';
-  downloadBtnRowGrid.style.gap = '1em';
-  downloadBtnRowGrid.appendChild(downloadTxsBtn);
-  formGrid.appendChild(downloadBtnRowGrid);
-
-  // Result row (empty label for alignment)
-  const emptyLabelResultGrid = document.createElement('div');
-  formGrid.appendChild(emptyLabelResultGrid);
-  formGrid.appendChild(resultDivGrid);
-
   container.appendChild(formGrid);
   pageContainer.appendChild(container);
   document.body.appendChild(pageContainer);
+
+  // Add footer only if branding footer or email is available
+  const footerBranding = (BRANDING as any).footer;
+  if (footerBranding) {
+    const footer = document.createElement('footer');
+    footer.style.marginTop = '2em';
+    footer.style.textAlign = 'center';
+    footer.style.color = '#fff';
+    footer.style.fontSize = '0.95em';
+    footer.style.width = '100%';
+    footer.style.position = 'fixed';
+    footer.style.left = '0';
+    footer.style.bottom = '0';
+    footer.style.background = '#111';
+    footer.style.zIndex = '100';
+    footer.innerHTML = footerBranding.copyright;
+
+    const emailLink = document.createElement('a');
+    emailLink.href = `mailto:${footerBranding.email}`;
+    emailLink.style.color = '#fff';
+    emailLink.style.textDecoration = 'underline';
+    emailLink.textContent = footerBranding.email;
+    footer.appendChild(document.createTextNode(' | To become a relayer, use '));
+    footer.appendChild(emailLink);
+
+    // --- Add Download Saved Transactions link to footer ---
+    const downloadLink = document.createElement('a');
+    downloadLink.href = '#';
+    downloadLink.style.color = '#fff';
+    downloadLink.style.textDecoration = 'underline';
+    downloadLink.style.display = 'inline';
+    downloadLink.textContent = 'here';
+    downloadLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      const txs = localStorage.getItem('transactions') || '[]';
+      const blob = new Blob([txs], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'transactions.json';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 0);
+    });
+
+    footer.appendChild(document.createTextNode(' | To download saved transactions, click '));
+    footer.appendChild(downloadLink);
+    footer.appendChild(document.createTextNode('.'));
+    document.body.appendChild(footer);
+  }
 
   // Remove vertical scrollbar if not needed
   const style = document.createElement('style');
