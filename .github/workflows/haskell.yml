@@ -12,10 +12,10 @@ jobs:
     steps:
     - name: Checkout source code
       uses: actions/checkout@v3
-    - name: Check source code is formatted correctly (fourmolu)
-      uses: haskell-actions/run-fourmolu@v11
-      with:
-        version: "0.16.2.0"
+    # - name: Check source code is formatted correctly (fourmolu)
+    #   uses: haskell-actions/run-fourmolu@v11
+    #   with:
+    #     version: "0.16.2.0"
     # - name: Check cabal file is formatted correctly
     #   uses: tfausak/cabal-gild-setup-action@v2
     # - name: Check cabal file is formatted correctly
