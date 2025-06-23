@@ -13,7 +13,7 @@ import Network.Wai
 import Network.Wai.Middleware.RequestLogger
 import System.IO (stderr)
 import System.Log.FastLogger
-import ZkFold.Cardano.UtxoAccumulator.Server.Utils (bytestringToString)
+import ZkFold.Cardano.UtxoAccumulator.Utils (bytestringToString)
 
 -- See https://cloud.google.com/logging/docs/structured-logging. This Haskell code defines a middleware for logging HTTP requests in a Google Cloud Platform (GCP) compatible format.
 gcpReqLogger :: IO Middleware

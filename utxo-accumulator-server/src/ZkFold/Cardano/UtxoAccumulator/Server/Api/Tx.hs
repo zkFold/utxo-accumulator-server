@@ -20,6 +20,7 @@ import ZkFold.Cardano.UtxoAccumulator.Server.RSA (RSAKeyPair, decryptWithPrivate
 import ZkFold.Cardano.UtxoAccumulator.Server.Utils
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder (addUtxoRun)
 import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
+import ZkFold.Cardano.UtxoAccumulator.Utils (parseNatural, writeNaturalToHex)
 import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS)
 
 type TransactionPrefix :: Symbol

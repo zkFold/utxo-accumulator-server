@@ -48,18 +48,34 @@ export function randomBlsScalarHex() {
   return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-interface SavedTransaction {
-  body: any;
-  settings: any;
-  timestamp: number;
+// Types matching backend AccumulatorData
+export interface AccumulatorDataKey {
+  adkAddress: string;
+  adkNonceL: string;
+}
+export interface AccumulatorDataItem {
+  adiNonceR: string;
+  adiDistributionTime: number | null;
+  adiThreadTokenRef: string;
 }
 
-export function loadSavedTransactions(): SavedTransaction[] {
+// Save as array of [AccumulatorDataKey, AccumulatorDataItem] pairs
+export function loadSavedTransactions(): [AccumulatorDataKey, AccumulatorDataItem][] {
   return JSON.parse(localStorage.getItem('transactions') || '[]');
 }
 
 export function saveTransaction(body: any, settings: any) {
+  // Build AccumulatorDataKey and AccumulatorDataItem
+  const key: AccumulatorDataKey = {
+    adkAddress: body.tx_recipient,
+    adkNonceL: body.tx_nonce_l
+  };
+  const item: AccumulatorDataItem = {
+    adiNonceR: body.tx_nonce_r,
+    adiDistributionTime: body.tx_distribution_time ?? null,
+    adiThreadTokenRef: settings.thread_token_ref
+  };
   const saved = loadSavedTransactions();
-  saved.push({ body, settings, timestamp: Date.now() });
+  saved.push([key, item]);
   localStorage.setItem('transactions', JSON.stringify(saved));
 }

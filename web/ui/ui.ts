@@ -50,7 +50,6 @@ addressInputGrid.placeholder = 'addr_test1abcdefghijklmnopqrstuvwxyz...';
 export const fillAddrBtn = document.createElement('button');
 fillAddrBtn.textContent = BRANDING.labels.useWalletAddress || 'Use Wallet Address';
 fillAddrBtn.type = 'button';
-fillAddrBtn.style.marginLeft = '1em';
 fillAddrBtn.title = 'Fill the address field with your currently selected wallet address.';
 
 export const sendBtn = document.createElement('button');
@@ -75,7 +74,7 @@ downloadIcon.innerHTML = `
   <rect x="4" y="16" width="12" height="2" rx="1" fill="currentColor"/>
 `;
 downloadTxsBtn.appendChild(downloadIcon);
-downloadTxsBtn.appendChild(document.createTextNode(BRANDING.labels.downloadTxs || 'Download Transactions'));
+downloadTxsBtn.appendChild(document.createTextNode(BRANDING.labels.downloadTxs || 'Download Saved Transactions'));
 
 export const resultDivGrid = document.createElement('div');
 resultDivGrid.id = 'result';
@@ -200,8 +199,18 @@ export function initUILayout() {
   buttonRowGrid.style.gap = '1em';
   buttonRowGrid.appendChild(fillAddrBtn);
   buttonRowGrid.appendChild(sendBtn);
-  buttonRowGrid.appendChild(downloadTxsBtn);
   formGrid.appendChild(buttonRowGrid);
+
+  // Download Transactions button row (empty label for alignment)
+  const emptyLabelDownloadGrid = document.createElement('div');
+  formGrid.appendChild(emptyLabelDownloadGrid);
+  const downloadBtnRowGrid = document.createElement('div');
+  downloadBtnRowGrid.style.display = 'flex';
+  downloadBtnRowGrid.style.alignItems = 'center';
+  downloadBtnRowGrid.style.marginTop = '1em';
+  downloadBtnRowGrid.style.gap = '1em';
+  downloadBtnRowGrid.appendChild(downloadTxsBtn);
+  formGrid.appendChild(downloadBtnRowGrid);
 
   // Result row (empty label for alignment)
   const emptyLabelResultGrid = document.createElement('div');

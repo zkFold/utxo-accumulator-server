@@ -3,6 +3,8 @@ module ZkFold.Cardano.UtxoAccumulator.Server.Api.Settings (
   handleSettings,
 ) where
 
+import Data.Aeson (encode)
+import Data.ByteString.Lazy.Char8 qualified as BL8
 import Data.Char (toLower)
 import Data.List (isPrefixOf)
 import Data.Swagger qualified as Swagger
@@ -46,12 +48,15 @@ handleSettings :: RSAKeyPair -> Config -> GYTxOutRef -> IO Settings
 handleSettings rsaKeyPair cfg@Config {..} ref = do
   logInfo cfg "Settings API requested."
   let (n, e) = getPublicKeyNumbers rsaKeyPair
+      stripQuotes s = case s of
+        ('"' : xs) -> reverse (dropWhile (== '"') (reverse xs))
+        _ -> s
   pure $
     Settings
       { settingsNetwork = cfgNetworkId & customShowNetworkId
       , settingsVersion = showVersion PackageInfo.version
       , settingsAccumulationValue = show cfgAccumulationValue
-      , settingsThreadTokenRef = show ref
+      , settingsThreadTokenRef = stripQuotes (BL8.unpack $ encode ref)
       , settingsRsaPublicKeyN = show n
       , settingsRsaPublicKeyE = show e
       }
