@@ -88,14 +88,14 @@ addUtxo crs accumulationValue scriptRef ttRef gyServer recipient l r = do
       <> mustHaveOutput
         GYTxOut
           { gyTxOutAddress = gyServer
-          , gyTxOutValue = serverFee
+          , gyTxOutValue = serverFee accumulationValue
           , gyTxOutDatum = Nothing
           , gyTxOutRefS = Nothing
           }
       <> mustHaveOutput
         GYTxOut
           { gyTxOutAddress = protocolTreasuryAddress
-          , gyTxOutValue = protocolFee
+          , gyTxOutValue = protocolFee accumulationValue
           , gyTxOutDatum = Nothing
           , gyTxOutRefS = Nothing
           }

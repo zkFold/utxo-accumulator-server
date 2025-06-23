@@ -14,7 +14,7 @@ import ZkFold.Cardano.UPLC.UtxoAccumulator (UtxoAccumulatorParameters, utxoAccum
 import ZkFold.Cardano.UtxoAccumulator.Datum (addDatums, removeDatums)
 import ZkFold.Prelude (readFileJSON)
 import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS (..), utxoAccumulatorVerifierSetup)
-import Prelude (IO, Integer, Maybe (..), ($), (.))
+import Prelude (IO, Integer, Maybe (..), Ord (..), otherwise, ($), (.))
 
 -- Thread token
 
@@ -43,11 +43,20 @@ scriptParkingAddress =
 
 -- Protocol parameters
 
-serverFee :: GYValue
-serverFee = valueFromLovelace 3_000_000
+feeFromAccumulationValue :: GYValue -> GYValue
+feeFromAccumulationValue v
+  | n <= 100_000_000 = valueFromLovelace 2_000_000
+  | n <= 1_000_000_000 = valueFromLovelace 5_000_000
+  | n <= 10_000_000_000 = valueFromLovelace 10_000_000
+  | otherwise = valueFromLovelace 25_000_000
+ where
+  n = valueAda v
 
-protocolFee :: GYValue
-protocolFee = valueFromLovelace 1_000_000
+serverFee :: GYValue -> GYValue
+serverFee = feeFromAccumulationValue
+
+protocolFee :: GYValue -> GYValue
+protocolFee = feeFromAccumulationValue
 
 -- TODO: adjust the constant
 protocolTreasuryAddress :: GYAddress
@@ -61,9 +70,6 @@ protocolStakingCredential =
   StakingHash $ stakeCredentialToPlutus $ GYStakeCredentialByKey "d86735768f93082c92217c0d59b115fdc43b9dfd275d07eff3aa72ff"
 
 -- Utxo Accumulator
-
--- type N = 3
--- type M = 2048
 
 type N = 1024
 type M = 16384

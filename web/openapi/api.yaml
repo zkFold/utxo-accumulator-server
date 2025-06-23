@@ -17,18 +17,25 @@ components:
       properties:
         accumulation_value:
           type: string
+        maybe_script_ref:
+          type: string
         network:
           type: string
         rsa_public_key_e:
           type: string
         rsa_public_key_n:
           type: string
+        thread_token_refs:
+          items:
+            type: string
+          type: array
         version:
           type: string
       required:
       - network
       - version
       - accumulation_value
+      - thread_token_refs
       - rsa_public_key_n
       - rsa_public_key_e
       type: object

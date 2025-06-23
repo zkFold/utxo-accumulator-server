@@ -5,6 +5,7 @@ module ZkFold.Cardano.UtxoAccumulator.Server.Api.Settings (
 
 import Data.Char (toLower)
 import Data.List (isPrefixOf)
+import Data.Maybe (fromJust)
 import Data.Swagger qualified as Swagger
 import Data.Version (showVersion)
 import Deriving.Aeson
@@ -26,6 +27,8 @@ data Settings = Settings
   { settingsNetwork :: !String
   , settingsVersion :: !String
   , settingsAccumulationValue :: !String
+  , settingsScriptRef :: !String -- script reference
+  , settingsThreadTokenRefs :: ![String] -- List of thread token references
   , settingsRsaPublicKeyN :: !String -- Modulus as decimal string
   , settingsRsaPublicKeyE :: !String -- Exponent as decimal string
   }
@@ -50,6 +53,8 @@ handleSettings rsaKeyPair cfg@Config {..} = do
       { settingsNetwork = cfgNetworkId & customShowNetworkId
       , settingsVersion = showVersion PackageInfo.version
       , settingsAccumulationValue = show cfgAccumulationValue
+      , settingsScriptRef = show $ fromJust cfgMaybeScriptRef
+      , settingsThreadTokenRefs = map show cfgThreadTokenRefs
       , settingsRsaPublicKeyN = show n
       , settingsRsaPublicKeyE = show e
       }

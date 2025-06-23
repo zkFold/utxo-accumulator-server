@@ -47,3 +47,19 @@ export function randomBlsScalarHex() {
   window.crypto.getRandomValues(arr);
   return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
 }
+
+interface SavedTransaction {
+  body: any;
+  settings: any;
+  timestamp: number;
+}
+
+export function loadSavedTransactions(): SavedTransaction[] {
+  return JSON.parse(localStorage.getItem('transactions') || '[]');
+}
+
+export function saveTransaction(body: any, settings: any) {
+  const saved = loadSavedTransactions();
+  saved.push({ body, settings, timestamp: Date.now() });
+  localStorage.setItem('transactions', JSON.stringify(saved));
+}
