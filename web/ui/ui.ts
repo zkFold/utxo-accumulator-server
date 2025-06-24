@@ -152,7 +152,7 @@ export function initUILayout() {
   // --- UTxO Removal Timer row ---
   const removalTimeLabelGrid = document.createElement('label');
   removalTimeLabelGrid.htmlFor = 'removalTimeSelect';
-  removalTimeLabelGrid.textContent = BRANDING.labels.timer || 'Transaction timer:';
+  removalTimeLabelGrid.textContent = BRANDING.labels.timer || 'Transaction Timer:';
   formGrid.appendChild(removalTimeLabelGrid);
   formGrid.appendChild(removalTimeSelect);
 
@@ -166,7 +166,7 @@ export function initUILayout() {
   // Address row
   const addressLabelGrid = document.createElement('label');
   addressLabelGrid.htmlFor = 'address';
-  addressLabelGrid.textContent = BRANDING.labels.address || 'Address:';
+  addressLabelGrid.textContent = BRANDING.labels.address || 'Destination Address:';
   formGrid.appendChild(addressLabelGrid);
   formGrid.appendChild(addressInputGrid);
 
