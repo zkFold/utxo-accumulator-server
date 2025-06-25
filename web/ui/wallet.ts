@@ -11,6 +11,8 @@ export const wallets: WalletInfo[] = [
   { label: 'Gero', key: 'gerowallet' },
   { label: 'Begin', key: 'begin' },
   { label: 'Typhon', key: 'typhoncip30' },
+  { label: 'Vespr', key: 'vespr' },
+  { label: 'Tokeo', key: 'tokeo' },
 ];
 
 export async function getWalletApi(walletKey: string): Promise<WalletApi | null> {
