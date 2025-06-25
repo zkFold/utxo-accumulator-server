@@ -89,8 +89,10 @@ function rebuildServerDropdown(selectedAmount: number) {
 
 let walletApi: WalletApi = null;
 let walletKey: string = wallets[0].key;
+let walletLabel: string = wallets[0].label;
 walletSelect.onchange = () => {
   walletKey = walletSelect.value;
+  walletLabel = wallets.find((w: WalletInfo) => w.key === walletKey)?.label || walletKey;
   walletApi = null; // Force re-enable on wallet change
 };
 
@@ -98,7 +100,7 @@ sendBtn.onclick = async () => {
   // Always re-enable walletApi to ensure we get the new wallet context
   walletApi = await getWalletApi(walletKey);
   if (!walletApi) {
-    setResultMessage(resultDivGrid, `${walletKey} wallet not found. Please install or enable it.`);
+    setResultMessage(resultDivGrid, `${walletLabel} wallet not found. Please install or enable it.`);
     return;
   }
   let senderAddress = '';
