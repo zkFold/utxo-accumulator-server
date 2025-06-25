@@ -35,7 +35,7 @@ jobs:
 
       - name: Copy UI dist to target repo
         run: |
-          rm -rf target-repo/dist
+          rm -rf target-repo/docs
           cp -r web/ui/dist target-repo/docs
 
       - name: Commit and push changes
