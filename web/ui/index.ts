@@ -3,7 +3,7 @@ import { BRANDING } from './branding';
 import { wallets, getWalletApi, getWalletAnyAddress, hexToBech32, signAndSubmitTxWithWallet, WalletApi, WalletInfo } from './wallet';
 import { serverBases, fetchAllServerSettings, sendTransaction, serverSettings } from './api';
 import { parseAccumulationValue, setResultMessage, clearResultMessage, isValidPreprodBech32Address, randomBlsScalarHex, saveTransaction } from './utils';
-import { walletSelect, serverSelect, amountSelect, addressInputGrid, fillAddrBtn, sendBtn, resultDivGrid, title, subtitle, initUILayout, removalTimeSelect } from './ui';
+import { walletSelect, serverSelect, amountSelect, addressInputGrid, sendBtn, resultDivGrid, title, subtitle, initUILayout, removalTimeSelect } from './ui';
 
 // Set up branding: logo, title, styles, and labels
 document.title = BRANDING.title;
@@ -30,7 +30,6 @@ for (const key in styleVars) {
 initUILayout();
 
 // Set button and label texts from branding config
-fillAddrBtn.textContent = BRANDING.labels.useWalletAddress || 'Use Wallet Address';
 sendBtn.textContent = BRANDING.labels.send || 'Send';
 // You can add more label assignments as needed
 
@@ -61,7 +60,6 @@ walletSelect.addEventListener('input', () => clearResultMessage(resultDivGrid));
 serverSelect.addEventListener('input', () => clearResultMessage(resultDivGrid));
 amountSelect.addEventListener('input', () => clearResultMessage(resultDivGrid));
 addressInputGrid.addEventListener('input', () => clearResultMessage(resultDivGrid));
-fillAddrBtn.addEventListener('click', () => clearResultMessage(resultDivGrid));
 sendBtn.addEventListener('click', () => clearResultMessage(resultDivGrid));
 
 // Helper to rebuild server dropdown based on selected amount
@@ -94,20 +92,6 @@ let walletKey: string = wallets[0].key;
 walletSelect.onchange = () => {
   walletKey = walletSelect.value;
   walletApi = null; // Force re-enable on wallet change
-};
-
-fillAddrBtn.onclick = async () => {
-  if (!walletKey) return;
-  // Always re-enable walletApi to ensure we get the new wallet context
-  walletApi = await getWalletApi(walletKey);
-  if (!walletApi) return;
-  try {
-    const addrHex = await getWalletAnyAddress(walletApi);
-    if (addrHex) {
-      const bech32 = hexToBech32(addrHex);
-      if (bech32) addressInputGrid.value = bech32;
-    }
-  } catch { }
 };
 
 sendBtn.onclick = async () => {
@@ -158,11 +142,16 @@ sendBtn.onclick = async () => {
   try {
     const settings = serverSettings[serverBase];
     const response = await sendTransaction(serverBase, body, settings);
+    const data = await response.json();
     if (!response.ok) {
-      setResultMessage(resultDivGrid, `Error: ${response.status} ${response.statusText}`);
+      if (data && data.message) {
+        setResultMessage(resultDivGrid, `Error: ${data.message}`);
+      } else {
+        setResultMessage(resultDivGrid, `Error: ${response.status} ${response.statusText}`);
+      }
+
       return;
     }
-    const data = await response.json();
     if (walletApi && data && typeof data === 'string') {
       saveTransaction(body, settings);
       const ok = await signAndSubmitTxWithWallet(walletApi, data, wallets.find((w: WalletInfo) => w.key === walletKey)?.label || walletKey, resultDivGrid);

@@ -7,6 +7,7 @@ export type WalletInfo = { label: string; key: string };
 export const wallets: WalletInfo[] = [
   { label: 'Lace', key: 'lace' },
   { label: 'Eternl', key: 'eternl' },
+  { label: 'Nami', key: 'nami' },
 ];
 
 export async function getWalletApi(walletKey: string): Promise<WalletApi | null> {

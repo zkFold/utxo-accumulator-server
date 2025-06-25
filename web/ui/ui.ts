@@ -47,13 +47,9 @@ addressInputGrid.name = 'address';
 addressInputGrid.style.width = '825px';
 addressInputGrid.placeholder = 'addr_test1abcdefghijklmnopqrstuvwxyz...';
 
-export const fillAddrBtn = document.createElement('button');
-fillAddrBtn.textContent = BRANDING.labels.useWalletAddress || 'Use Wallet Address';
-fillAddrBtn.type = 'button';
-fillAddrBtn.title = 'Fill the address field with your currently selected wallet address.';
-
 export const sendBtn = document.createElement('button');
 sendBtn.type = 'button';
+sendBtn.style.width = '350px';
 sendBtn.textContent = BRANDING.labels.send || 'Send';
 
 export const resultDivGrid = document.createElement('div');
@@ -177,7 +173,6 @@ export function initUILayout() {
   buttonRowGrid.style.display = 'flex';
   buttonRowGrid.style.alignItems = 'center';
   buttonRowGrid.style.gap = '1em';
-  buttonRowGrid.appendChild(fillAddrBtn);
   buttonRowGrid.appendChild(sendBtn);
   formGrid.appendChild(buttonRowGrid);
 
