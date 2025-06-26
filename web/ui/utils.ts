@@ -87,8 +87,8 @@ export function saveTransaction(body: any, settings: any) {
 export async function resolveRecipientAddress(input: string): Promise<string> {
   // If already a valid bech32 address, return as-is
   if (isValidPreprodBech32Address(input)) return input;
-  // Ada Handle: starts with $ and is alphanumeric (optionally .cardano)
-  const handleMatch = input.match(/^\$([a-zA-Z0-9_]+)(\.cardano)?$/);
+  // Ada Handle: starts with $ and is a-z, A-Z, 0-9, dash, underscore, or period
+  const handleMatch = input.match(/^\$([a-zA-Z0-9._-]+)$/);
   if (handleMatch) {
     const handle = handleMatch[1].toLowerCase();
     try {
