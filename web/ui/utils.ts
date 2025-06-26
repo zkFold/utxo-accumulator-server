@@ -98,7 +98,7 @@ export async function resolveRecipientAddress(input: string): Promise<string> {
       if (data && data.resolved_addresses
         && typeof data.resolved_addresses.ada === 'string'
         && isValidPreprodBech32Address(data.resolved_addresses.ada)) {
-        return data.address;
+        return data.resolved_addresses.ada;
       } else {
         throw new Error('Ada Handle did not resolve to a valid address');
       }
