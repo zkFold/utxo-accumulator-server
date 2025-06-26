@@ -138,7 +138,7 @@ signingKeysFromServerWallet nid (KeyPathWallet fp) = do
             AGYExtendedStakeSigningKey skey' -> getExtendedVerificationKey skey' & extendedVerificationKeyHash
      in addressFromCredential nid (GYPaymentCredentialByKey pkh) (Just $ GYStakeCredentialByKey skh)
 
--- | Update config.yaml with new maybeScriptRef and threadTokenRefs values.
+-- | Update config file with new maybeScriptRef and threadTokenRefs values.
 updateConfigYaml :: FilePath -> Maybe GYTxOutRef -> [GYTxOutRef] -> IO ()
 updateConfigYaml configPath mScriptRef threadTokenRefs = do
   mVal <-

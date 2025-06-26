@@ -108,8 +108,8 @@ runServer mfp mode = do
         else return cfg'
     ref <- fromJust <$> threadTokenRefFromSync cfg''
 
-    -- Update config.yaml with maybeScriptRef and maybeThreadTokenRef values
-    updateConfigYaml "config.yaml" (cfgMaybeScriptRef cfg') (cfgThreadTokenRefs cfg'')
+    -- Update config file with maybeScriptRef and maybeThreadTokenRef values
+    updateConfigYaml (fromMaybe "config.yaml" mfp) (cfgMaybeScriptRef cfg') (cfgThreadTokenRefs cfg'')
 
     case mode of
       ModeAccumulate -> do
