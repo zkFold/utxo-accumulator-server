@@ -5,6 +5,7 @@ import { encryptTransaction } from './rsa';
 
 export const serverBases = [
   { label: 'Primary Relay', base: 'https://i7mkyoz28i.execute-api.eu-central-1.amazonaws.com' },
+  { label: 'Primary Relay', base: 'https://tsffd900dj.execute-api.eu-central-1.amazonaws.com' },
   { label: 'Localhost', base: 'http://localhost:8082' }
 ];
 
