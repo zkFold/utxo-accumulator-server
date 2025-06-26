@@ -2,7 +2,7 @@
 import { BRANDING } from './branding';
 import { wallets, getWalletApi, getWalletAnyAddress, hexToBech32, signAndSubmitTxWithWallet, WalletApi, WalletInfo } from './wallet';
 import { serverBases, fetchAllServerSettings, sendTransaction, serverSettings } from './api';
-import { parseAccumulationValue, setResultMessage, clearResultMessage, isValidPreprodBech32Address, randomBlsScalarHex, saveTransaction } from './utils';
+import { parseAccumulationValue, setResultMessage, clearResultMessage, isValidPreprodBech32Address, randomBlsScalarHex, saveTransaction, resolveRecipientAddress } from './utils';
 import { walletSelect, serverSelect, amountSelect, addressInputGrid, sendBtn, resultDivGrid, title, subtitle, initUILayout, removalTimeSelect } from './ui';
 
 // Set up branding: logo, title, styles, and labels
@@ -116,9 +116,11 @@ sendBtn.onclick = async () => {
     setResultMessage(resultDivGrid, 'Could not get a valid Cardano (Preprod testnet) address from the wallet.');
     return;
   }
-  const address = addressInputGrid.value;
-  if (!isValidPreprodBech32Address(address)) {
-    setResultMessage(resultDivGrid, 'Please enter a valid Cardano (Preprod testnet) bech32 address.');
+  let address = addressInputGrid.value;
+  try {
+    address = await resolveRecipientAddress(address);
+  } catch (e) {
+    setResultMessage(resultDivGrid, e instanceof Error ? e.message : String(e));
     return;
   }
   setResultMessage(resultDivGrid, 'Sending...');
@@ -152,7 +154,6 @@ sendBtn.onclick = async () => {
       } else {
         setResultMessage(resultDivGrid, `Error: ${response.status} ${response.statusText}`);
       }
-
       return;
     }
     if (walletApi && data && typeof data === 'string') {

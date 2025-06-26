@@ -45,7 +45,7 @@ addressInputGrid.type = 'text';
 addressInputGrid.id = 'address';
 addressInputGrid.name = 'address';
 addressInputGrid.style.width = '825px';
-addressInputGrid.placeholder = 'addr_test1abcdefghijklmnopqrstuvwxyz...';
+addressInputGrid.placeholder = 'addr_test1abcdefghijklmnopqrstuvwxyz... or $abcd';
 
 export const sendBtn = document.createElement('button');
 sendBtn.type = 'button';
