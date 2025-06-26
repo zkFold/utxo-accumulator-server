@@ -51,7 +51,7 @@ initAccumulator crs serverAddr accumulationValue = do
         <> mustHaveOutput
           GYTxOut
             { gyTxOutAddress = accAddr
-            , gyTxOutValue = t
+            , gyTxOutValue = t <> valueFromLovelace 6_000_000
             , gyTxOutDatum = Just (utxoAccumulatorDatumInit crs, GYTxOutUseInlineDatum)
             , gyTxOutRefS = Nothing
             }

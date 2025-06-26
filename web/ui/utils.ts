@@ -1,11 +1,14 @@
 // utils.ts
 // Helper functions for parsing, result display, etc.
 
-export function parseAccumulationValue(val: any): number | null {
-  if (typeof val === 'string') {
-    const m = val.match(/GYLovelace,\s*(\d+)/);
-    if (m) return Number(m[1]);
-  }
+export function parseAccumulationValue(val: string): string | null {
+  if (typeof val !== 'string') return null;
+  // ADA: GYLovelace, 1000000000
+  let m = val.match(/GYLovelace,\s*(\d+)/);
+  if (m) return m[1];
+  // Single asset: valueFromList [(GYToken "<policy>" "<asset>",amount)]
+  m = val.match(/valueFromList \[\(GYToken \"([0-9a-fA-F]+)\" \"([A-Za-z0-9_]+)\",(\d+)\)\]/);
+  if (m) return `${m[1]}.${m[2]}.${m[3]}`;
   return null;
 }
 

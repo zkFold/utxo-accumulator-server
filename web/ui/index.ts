@@ -44,13 +44,14 @@ wallets.forEach((w: WalletInfo) => {
 
 // Populate amount dropdown
 const amountOptions = [
-  { label: '100 ada', value: 100_000_000 },
-  { label: '1000 ada', value: 1_000_000_000 },
-  { label: '10000 ada', value: 10_000_000_000 },
+  { label: '100 ada', value: '100000000' },
+  { label: '1000 ada', value: '1000000000' },
+  { label: '10000 ada', value: '10000000000' },
+  { label: '1000 INDY', value: 'acf8a16a63d0203e18a1fa1050e21c0754c10ea55c5e24ae15193325.INDY.1000' },
 ];
 amountOptions.forEach(opt => {
   const option = document.createElement('option');
-  option.value = String(opt.value);
+  option.value = opt.value;
   option.textContent = opt.label;
   amountSelect.appendChild(option);
 });
@@ -63,13 +64,13 @@ addressInputGrid.addEventListener('input', () => clearResultMessage(resultDivGri
 sendBtn.addEventListener('click', () => clearResultMessage(resultDivGrid));
 
 // Helper to rebuild server dropdown based on selected amount
-function rebuildServerDropdown(selectedAmount: number) {
+function rebuildServerDropdown(selectedAmountStr: string) {
   while (serverSelect.firstChild) serverSelect.removeChild(serverSelect.firstChild);
   let found = false;
   serverBases.forEach((s) => {
     const settings = serverSettings[s.base];
     const accVal = settings ? parseAccumulationValue(settings.accumulation_value) : null;
-    if (settings && accVal === selectedAmount) {
+    if (settings && accVal === selectedAmountStr) {
       const opt = document.createElement('option');
       opt.value = s.base;
       opt.textContent = s.label;
@@ -168,8 +169,8 @@ sendBtn.onclick = async () => {
 };
 
 amountSelect.onchange = () => {
-  const selectedAmount = Number(amountSelect.value);
-  rebuildServerDropdown(selectedAmount);
+  const selectedAmountStr = amountSelect.value;
+  rebuildServerDropdown(selectedAmountStr);
 };
 
 removalTimeSelect.addEventListener('change', () => {
@@ -180,6 +181,6 @@ removalTimeSelect.addEventListener('change', () => {
 
 (async () => {
   await fetchAllServerSettings();
-  const initialAmount = Number(amountSelect.value);
-  rebuildServerDropdown(initialAmount);
+  const initialAmountStr = amountSelect.value;
+  rebuildServerDropdown(initialAmountStr);
 })();
