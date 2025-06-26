@@ -18,7 +18,7 @@ tests: true
 source-repository-package
   type: git
   location: https://github.com/zkFold/zkfold-cardano
-  tag: 832930ea29db24f10adf5f9a189a7e790846c203
+  tag: aa545be2d28a0aad6a0f10b36690dd3c0d28d427
   subdir:
     zkfold-cardano
     zkfold-cardano-scripts

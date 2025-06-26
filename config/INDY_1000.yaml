@@ -9,12 +9,11 @@ logging:
   type:
     tag: stderr
   verbosity: V2
-maybeScriptRef: 0fb6c3b8cf67cfe2fdc98e1d93cc5459d7918d7e8d3e5de253ace6259ce45453#0
+maybeScriptRef:
 networkId: preprod
 port: 8084
 serverApiKey: '123456'
-threadTokenRefs:
-- 260cfce6001a9abcb2c9a28a730fb5c5bda916c07399271956c65bfb29566258#2
+threadTokenRefs: []
 wallet:
   contents:
     accIx: 0
