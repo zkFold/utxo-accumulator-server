@@ -92,7 +92,7 @@ export async function resolveRecipientAddress(input: string): Promise<string> {
   if (handleMatch) {
     const handle = handleMatch[1].toLowerCase();
     try {
-      const resp = await fetch(`https://api.handle.me/handles/${handle}?hex=false`);
+      const resp = await fetch(`https://preprod.api.handle.me/handles/${handle}?hex=false`);
       if (!resp.ok) throw new Error('Ada Handle not found');
       const data = await resp.json();
       if (data && data.resolved_addresses
