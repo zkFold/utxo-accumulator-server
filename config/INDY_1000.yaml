@@ -1,5 +1,5 @@
 accumulationValue:
-  lovelace: 100000000
+  acf8a16a63d0203e18a1fa1050e21c0754c10ea55c5e24ae15193325.494e4459: 1000
 coreProvider:
   maestroToken: aCmZhlBBq7f3dHls9INwu9KlsNQwUXS3
   turboSubmit: false
@@ -9,12 +9,12 @@ logging:
   type:
     tag: stderr
   verbosity: V2
-maybeScriptRef: 0bcda08bb7638405398fc66fcad45aa130ae9874ae3fe787fc103f7f3e2e1748#0
+maybeScriptRef: 0fb6c3b8cf67cfe2fdc98e1d93cc5459d7918d7e8d3e5de253ace6259ce45453#0
 networkId: preprod
-port: 8082
+port: 8084
 serverApiKey: '123456'
 threadTokenRefs:
-- b36f7af8c18de0a206d0bbe04f0bb0e22a402d1cf9fb4f3fc70019eabfde45db#5
+- 59ebb9a560bb4826ce93c686e946a6f13bec19ab2af2c7cc0bfee0e41b2b067f#4
 wallet:
   contents:
     accIx: 0

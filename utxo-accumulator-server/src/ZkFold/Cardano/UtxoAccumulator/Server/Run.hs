@@ -83,7 +83,7 @@ runServer mfp mode = do
           , cfgStakeKey = Just serverStakeKey
           , cfgAddress = serverAddr
           , cfgDatabasePath = scDatabasePath
-          , cfgAccumulationValue = valueFromLovelace scAccumulationValue
+          , cfgAccumulationValue = scAccumulationValue
           , cfgMaybeScriptRef = scMaybeScriptRef
           , cfgThreadTokenRefs = scThreadTokenRefs
           }

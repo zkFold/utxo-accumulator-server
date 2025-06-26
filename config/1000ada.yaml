@@ -1,4 +1,5 @@
-accumulationValue: 1000000000
+accumulationValue:
+  lovelace: 1000000000
 coreProvider:
   maestroToken: aCmZhlBBq7f3dHls9INwu9KlsNQwUXS3
   turboSubmit: false
