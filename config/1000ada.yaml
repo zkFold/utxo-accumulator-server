@@ -1,0 +1,45 @@
+accumulationValue: 1000000000
+coreProvider:
+  maestroToken: aCmZhlBBq7f3dHls9INwu9KlsNQwUXS3
+  turboSubmit: false
+databasePath: database/transactions.json
+logging:
+- severity: Debug
+  type:
+    tag: stderr
+  verbosity: V2
+maybeScriptRef:
+networkId: preprod
+port: 8083
+serverApiKey: '123456'
+threadTokenRefs: []
+wallet:
+  contents:
+    accIx: 0
+    addrIx: 0
+    mnemonic:
+    - health
+    - unable
+    - dog
+    - lend
+    - artefact
+    - arctic
+    - dinner
+    - energy
+    - silent
+    - wealth
+    - shock
+    - safe
+    - glad
+    - mail
+    - gas
+    - flag
+    - beauty
+    - penalty
+    - mixed
+    - garbage
+    - erupt
+    - wonder
+    - magnet
+    - around
+  tag: mnemonicWallet
