@@ -93,7 +93,7 @@ utxoAccumulatorAddress v =
           }
 
 utxoAccumulatorCRS :: IO UtxoAccumulatorCRS
-utxoAccumulatorCRS = readFileJSON "utxo-accumulator-api/data/crs.json"
+utxoAccumulatorCRS = readFileJSON "crs.json"
 
 utxoAccumulatorSetupBytesInit :: UtxoAccumulatorCRS -> SetupBytes
 utxoAccumulatorSetupBytesInit = mkSetup . utxoAccumulatorVerifierSetup @N @M

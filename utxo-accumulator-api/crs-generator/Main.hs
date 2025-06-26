@@ -19,4 +19,4 @@ main = do
           { crsAccElems = toList $ accumulationGroupElements @N @M crs
           , crsDistElems = toList $ distributionGroupElements @N @M crs
           }
-  writeFileJSON "utxo-accumulator-api/data/crs.json" crs'
+  writeFileJSON "crs.json" crs'

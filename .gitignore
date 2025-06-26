@@ -26,4 +26,4 @@ stack.yaml*
 node_modules
 e2e/public/css/
 web/ui/dist/
-database/*
+database/transactions.json
