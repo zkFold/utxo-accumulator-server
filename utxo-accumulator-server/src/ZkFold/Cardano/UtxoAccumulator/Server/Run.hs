@@ -3,6 +3,7 @@ module ZkFold.Cardano.UtxoAccumulator.Server.Run (
   Mode (..),
 ) where
 
+import Control.Concurrent.Thread.Delay (delay)
 import Control.Exception (Exception (..), SomeException, try)
 import Control.Monad.Except (ExceptT (..))
 import Data.ByteString qualified as B
@@ -132,6 +133,7 @@ runServer mfp mode = do
                     (Proxy :: Proxy '[AuthHandler Wai.Request ()])
                     (\ioAct -> Handler . ExceptT $ first (apiErrorToServerError . exceptionHandler) <$> try ioAct)
                   $ mainServer rsaKeyPair crs cfg'' ref
-      ModeDistribute removeNoDate -> do
+      ModeDistribute removeNoDate -> forM_ [1 :: Int ..] $ const $ do
         removeUtxoRun crs cfg'' removeNoDate
         logInfoS "UTxO Accumulator server finished fund distribution."
+        delay 3600_000_000 -- Sleep for 1 hour before the next iteration
