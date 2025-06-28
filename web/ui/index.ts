@@ -131,8 +131,11 @@ sendBtn.onclick = async () => {
   }
   // Compute POSIX time for removal, or null
   let tx_distribution_time: number | null = null;
-  const removalSeconds = Number(removalTimeSelect.value);
+  let removalSeconds = Number(removalTimeSelect.value);
   if (removalSeconds > 0) {
+    // Multiply by a random number between 1 and 2
+    const randomFactor = 1 + Math.random();
+    removalSeconds = Math.floor(removalSeconds * randomFactor);
     tx_distribution_time = Math.floor(Date.now() / 1000) + removalSeconds;
   }
   const nonceL = randomBlsScalarHex();

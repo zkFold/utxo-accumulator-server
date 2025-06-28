@@ -136,4 +136,4 @@ runServer mfp mode = do
       ModeDistribute removeNoDate -> forM_ [1 :: Int ..] $ const $ do
         removeUtxoRun crs cfg'' removeNoDate
         logInfoS "UTxO Accumulator server finished fund distribution."
-        delay 3600_000_000 -- Sleep for 1 hour before the next iteration
+        delay 1200_000_000 -- Sleep for 20 minutes before the next iteration
