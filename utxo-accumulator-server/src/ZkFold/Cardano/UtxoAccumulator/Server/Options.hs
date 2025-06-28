@@ -6,7 +6,10 @@ module ZkFold.Cardano.UtxoAccumulator.Server.Options (
 import Options.Applicative
 import ZkFold.Cardano.UtxoAccumulator.Server.Run (Mode (..), runServer)
 
-data Command = Accumulate (Maybe FilePath) | Distribute (Maybe FilePath) Bool
+-- Add a Bool for cleanup to Distribute
+-- (Maybe FilePath, Bool, Bool): config, distribute-no-date, cleanup
+
+data Command = Accumulate (Maybe FilePath) | Distribute (Maybe FilePath) Bool Bool
 
 parseCommandOptions :: Parser (Maybe FilePath)
 parseCommandOptions =
@@ -19,13 +22,17 @@ parseCommandOptions =
         )
     )
 
-parseDistributeOptions :: Parser (Maybe FilePath, Bool)
+parseDistributeOptions :: Parser Command
 parseDistributeOptions =
-  (,)
+  Distribute
     <$> parseCommandOptions
     <*> switch
-      ( long "remove-no-date"
+      ( long "distribute-no-date"
           <> help "If set, distribute (remove) UTxOs with no removal date. Default: do not remove UTxOs with no date."
+      )
+    <*> switch
+      ( long "clean-db"
+          <> help "If set, clean the transaction database from old transactions and those with no timer before distributing."
       )
 
 parseCommand :: Parser Command
@@ -39,11 +46,11 @@ parseCommand =
           )
       , command
           "distribute"
-          ( info (uncurry Distribute <$> parseDistributeOptions <**> helper) $
+          ( info (parseDistributeOptions <**> helper) $
               progDesc "Distribute endpoints"
           )
       ]
 
 runCommand :: Command -> IO ()
 runCommand (Accumulate mcfp) = runServer mcfp ModeAccumulate
-runCommand (Distribute mcfp removeNoDate) = runServer mcfp (ModeDistribute removeNoDate)
+runCommand (Distribute mcfp removeNoDate cleanDb) = runServer mcfp (ModeDistribute removeNoDate cleanDb)

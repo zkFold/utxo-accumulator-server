@@ -3,7 +3,7 @@ accumulationValue:
 coreProvider:
   maestroToken: aCmZhlBBq7f3dHls9INwu9KlsNQwUXS3
   turboSubmit: false
-databasePath: database/transactions.json
+databasePath: database/1000ada.json
 logging:
 - severity: Debug
   type:

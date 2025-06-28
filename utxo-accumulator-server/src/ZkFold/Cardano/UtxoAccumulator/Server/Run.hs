@@ -10,6 +10,7 @@ import Data.ByteString qualified as B
 import Data.Maybe (fromJust, isNothing)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as LT
+import Data.Time.Clock.POSIX (getPOSIXTime)
 import Data.Version (showVersion)
 import Data.Yaml.Pretty qualified as Yaml
 import Fmt
@@ -26,6 +27,7 @@ import Servant.Server.Experimental.Auth (AuthHandler)
 import Servant.Server.Internal.ServerError (responseServerError)
 import System.TimeManager (TimeoutThread (..))
 import ZkFold.Cardano.UtxoAccumulator.Constants (utxoAccumulatorCRS)
+import ZkFold.Cardano.UtxoAccumulator.Database (cleanUtxoAccumulatorData)
 import ZkFold.Cardano.UtxoAccumulator.Server.Api
 import ZkFold.Cardano.UtxoAccumulator.Server.Auth
 import ZkFold.Cardano.UtxoAccumulator.Server.Config (ServerConfig (..), coreConfigFromServerConfig, serverConfigOptionalFPIO, signingKeysFromServerWallet, updateConfigYaml)
@@ -37,7 +39,7 @@ import ZkFold.Cardano.UtxoAccumulator.Sync (threadTokenRefFromSync)
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder (initAccumulatorRun, postScriptRun, removeUtxoRun)
 import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
 
-data Mode = ModeAccumulate | ModeDistribute Bool
+data Mode = ModeAccumulate | ModeDistribute Bool Bool
   deriving (Eq, Show)
 
 runServer :: Maybe FilePath -> Mode -> IO ()
@@ -133,7 +135,13 @@ runServer mfp mode = do
                     (Proxy :: Proxy '[AuthHandler Wai.Request ()])
                     (\ioAct -> Handler . ExceptT $ first (apiErrorToServerError . exceptionHandler) <$> try ioAct)
                   $ mainServer rsaKeyPair crs cfg'' ref
-      ModeDistribute removeNoDate -> forM_ [1 :: Int ..] $ const $ do
-        removeUtxoRun crs cfg'' removeNoDate
-        logInfoS "UTxO Accumulator server finished fund distribution."
-        delay 1200_000_000 -- Sleep for 20 minutes before the next iteration
+      ModeDistribute removeNoDate cleanDb -> do
+        forM_ [1 :: Int ..] $ const $ do
+          now <- getPOSIXTime
+          removeUtxoRun crs cfg'' removeNoDate
+          logInfoS "UTxO Accumulator server finished fund distribution."
+          when cleanDb $ do
+            logInfoS "Cleaning transaction database from old transactions and those with no timer..."
+            removed <- cleanUtxoAccumulatorData scDatabasePath now
+            logInfoS $ "Removed " ++ show removed ++ " old/no-timer transactions from the database."
+          delay 1200_000_000 -- Sleep for 20 minutes before the next iteration

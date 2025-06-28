@@ -4,6 +4,7 @@ import Control.Monad (when)
 import Data.Aeson (FromJSON (..), ToJSON (..), object, withObject, (.:), (.=))
 import Data.Functor ((<&>))
 import Data.Map (Map, fromList, toList)
+import Data.Map qualified as Map
 import Data.String (fromString)
 import Data.Time.Clock.POSIX (POSIXTime)
 import GHC.Generics (Generic)
@@ -83,3 +84,17 @@ getUtxoAccumulatorData fp = do
 
 putUtxoAccumulatorData :: FilePath -> AccumulatorData -> IO ()
 putUtxoAccumulatorData fp = writeFileJSON fp . toList
+
+-- | Remove old and no-timer transactions from the accumulator database file.
+cleanUtxoAccumulatorData :: FilePath -> POSIXTime -> IO Int
+cleanUtxoAccumulatorData fp date = do
+  db <- getUtxoAccumulatorData fp
+  let isOldOrNoTimer :: AccumulatorDataItem -> Bool
+      isOldOrNoTimer item =
+        case adiDistributionTime item of
+          Nothing -> True
+          Just t -> t < date
+      db' = Map.filter (not . isOldOrNoTimer) db
+      removed = Map.size db - Map.size db'
+  _ <- putUtxoAccumulatorData fp db'
+  return removed
