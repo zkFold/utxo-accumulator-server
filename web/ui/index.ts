@@ -2,8 +2,8 @@
 import { BRANDING } from './branding';
 import { wallets, getWalletApi, getWalletAnyAddress, hexToBech32, signAndSubmitTxWithWallet, WalletApi, WalletInfo } from './wallet';
 import { serverBases, fetchAllServerSettings, sendTransaction, serverSettings } from './api';
-import { parseAccumulationValue, setResultMessage, clearResultMessage, isValidPreprodBech32Address, randomBlsScalarHex, saveTransaction, resolveRecipientAddress } from './utils';
-import { walletSelect, serverSelect, amountSelect, addressInputGrid, sendBtn, resultDivGrid, title, subtitle, initUILayout, removalTimeSelect } from './ui';
+import { parseAccumulationValue, setResultMessage, clearResultMessage, isValidPreprodBech32Address, randomBlsScalarHex, saveTransaction, resolveAdaHandle } from './utils';
+import { walletSelect, serverSelect, amountSelect, addressInputGrid, sendBtn, resultDivGrid, initUILayout, removalTimeSelect, resolveHandleBtn } from './ui';
 
 // Set up branding: logo, title, styles, and labels
 document.title = BRANDING.title;
@@ -116,11 +116,9 @@ sendBtn.onclick = async () => {
     setResultMessage(resultDivGrid, 'Could not get a valid Cardano (Preprod testnet) address from the wallet.');
     return;
   }
-  let address = addressInputGrid.value;
-  try {
-    address = await resolveRecipientAddress(address);
-  } catch (e) {
-    setResultMessage(resultDivGrid, e instanceof Error ? e.message : String(e));
+  let recipientAddress = addressInputGrid.value;
+  if (!isValidPreprodBech32Address(recipientAddress)) {
+    setResultMessage(resultDivGrid, 'Destination address is not a valid Cardano (Preprod testnet) address.');
     return;
   }
   setResultMessage(resultDivGrid, 'Sending...');
@@ -142,7 +140,7 @@ sendBtn.onclick = async () => {
   const nonceR = randomBlsScalarHex();
   const body = {
     tx_sender: senderAddress,
-    tx_recipient: address,
+    tx_recipient: recipientAddress,
     tx_nonce_l: `0x${nonceL}`,
     tx_nonce_r: `0x${nonceR}`,
     tx_distribution_time: tx_distribution_time === null ? null : tx_distribution_time
@@ -180,6 +178,34 @@ amountSelect.onchange = () => {
 removalTimeSelect.addEventListener('change', () => {
   if (removalTimeSelect.value === '') {
     window.alert('Warning: You have selected "No timer". This means the transaction will not be processed automatically. You must have access to the relay server to complete the transaction.');
+  }
+});
+
+// --- Ada Handle Resolution Button ---
+addressInputGrid.addEventListener('input', () => {
+  const val = addressInputGrid.value.trim();
+  if (/^\$[a-zA-Z0-9._-]+$/.test(val)) {
+    resolveHandleBtn.style.display = '';
+  } else {
+    resolveHandleBtn.style.display = 'none';
+  }
+});
+
+resolveHandleBtn.addEventListener('click', async () => {
+  clearResultMessage(resultDivGrid);
+  const handle = addressInputGrid.value.trim();
+  resolveHandleBtn.disabled = true;
+  resolveHandleBtn.textContent = 'Resolving...';
+  try {
+    const addr = await resolveAdaHandle(handle);
+    addressInputGrid.value = addr;
+    resolveHandleBtn.style.display = 'none';
+    setResultMessage(resultDivGrid, 'Ada Handle resolved!');
+  } catch (e) {
+    setResultMessage(resultDivGrid, e instanceof Error ? e.message : String(e));
+  } finally {
+    resolveHandleBtn.disabled = false;
+    resolveHandleBtn.textContent = 'Resolve Ada Handle';
   }
 });
 

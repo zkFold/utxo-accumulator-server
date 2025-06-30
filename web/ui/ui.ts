@@ -47,6 +47,13 @@ addressInputGrid.name = 'address';
 addressInputGrid.style.width = '825px';
 addressInputGrid.placeholder = 'addr_test1abcdefghijklmnopqrstuvwxyz... or $abcd';
 
+// --- Ada Handle Resolution Button ---
+export const resolveHandleBtn = document.createElement('button');
+resolveHandleBtn.type = 'button';
+resolveHandleBtn.textContent = 'Resolve Ada Handle';
+resolveHandleBtn.style.marginLeft = '1em';
+resolveHandleBtn.style.display = 'none';
+
 export const sendBtn = document.createElement('button');
 sendBtn.type = 'button';
 sendBtn.style.width = '350px';
@@ -174,6 +181,7 @@ export function initUILayout() {
   buttonRowGrid.style.alignItems = 'center';
   buttonRowGrid.style.gap = '1em';
   buttonRowGrid.appendChild(sendBtn);
+  buttonRowGrid.appendChild(resolveHandleBtn);
   formGrid.appendChild(buttonRowGrid);
 
   // Result row (empty label for alignment)

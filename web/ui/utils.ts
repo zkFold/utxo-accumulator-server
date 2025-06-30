@@ -83,28 +83,23 @@ export function saveTransaction(body: any, settings: any) {
   localStorage.setItem('transactions', JSON.stringify(saved));
 }
 
-// Resolves a recipient address: returns bech32 if valid, otherwise resolves Ada Handle (e.g. $bob or $bob.cardano)
-export async function resolveRecipientAddress(input: string): Promise<string> {
-  // If already a valid bech32 address, return as-is
-  if (isValidPreprodBech32Address(input)) return input;
-  // Ada Handle: starts with $ and is a-z, A-Z, 0-9, dash, underscore, or period
-  const handleMatch = input.match(/^\$([a-zA-Z0-9._-]+)$/);
-  if (handleMatch) {
-    const handle = handleMatch[1].toLowerCase();
-    try {
-      const resp = await fetch(`https://preprod.api.handle.me/handles/${handle}?hex=false`);
-      if (!resp.ok) throw new Error('Ada Handle not found');
-      const data = await resp.json();
-      if (data && data.resolved_addresses
-        && typeof data.resolved_addresses.ada === 'string'
-        && isValidPreprodBech32Address(data.resolved_addresses.ada)) {
-        return data.resolved_addresses.ada;
-      } else {
-        throw new Error('Ada Handle did not resolve to a valid address');
-      }
-    } catch (e) {
-      throw new Error('Failed to resolve Ada Handle: ' + (e instanceof Error ? e.message : e));
+// Resolves an Ada Handle (e.g. $bob or $bob.cardano) to a Cardano address. Throws if not resolvable.
+export async function resolveAdaHandle(handleInput: string): Promise<string> {
+  const handleMatch = handleInput.match(/^\$([a-zA-Z0-9._-]+)$/);
+  if (!handleMatch) throw new Error('Input is not a valid Ada Handle');
+  const handle = handleMatch[1].toLowerCase();
+  try {
+    const resp = await fetch(`https://preprod.api.handle.me/handles/${handle}?hex=false`);
+    if (!resp.ok) throw new Error('Ada Handle not found');
+    const data = await resp.json();
+    if (data && data.resolved_addresses
+      && typeof data.resolved_addresses.ada === 'string'
+      && isValidPreprodBech32Address(data.resolved_addresses.ada)) {
+      return data.resolved_addresses.ada;
+    } else {
+      throw new Error('Ada Handle did not resolve to a valid address');
     }
+  } catch (e) {
+    throw new Error('Failed to resolve Ada Handle: ' + (e instanceof Error ? e.message : e));
   }
-  throw new Error('Input is not a valid Cardano address or Ada Handle');
 }
