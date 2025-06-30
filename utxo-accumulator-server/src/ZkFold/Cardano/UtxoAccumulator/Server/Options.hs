@@ -27,12 +27,12 @@ parseDistributeOptions =
   Distribute
     <$> parseCommandOptions
     <*> switch
-      ( long "distribute-no-date"
-          <> help "If set, distribute (remove) UTxOs with no removal date. Default: do not remove UTxOs with no date."
+      ( long "force"
+          <> help "If set, distribute (remove) all valid UTxOs. Default: don't distribute UTxOs with the timer in the future or with no timer."
       )
     <*> switch
       ( long "clean-db"
-          <> help "If set, clean the transaction database from old transactions and those with no timer before distributing."
+          <> help "If set, clean the transaction database from old transactions and those with no timer before distributing. Default: do not clean the database."
       )
 
 parseCommand :: Parser Command
@@ -53,4 +53,4 @@ parseCommand =
 
 runCommand :: Command -> IO ()
 runCommand (Accumulate mcfp) = runServer mcfp ModeAccumulate
-runCommand (Distribute mcfp removeNoDate cleanDb) = runServer mcfp (ModeDistribute removeNoDate cleanDb)
+runCommand (Distribute mcfp forceDist cleanDb) = runServer mcfp (ModeDistribute forceDist cleanDb)

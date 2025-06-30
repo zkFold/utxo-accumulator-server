@@ -135,10 +135,10 @@ runServer mfp mode = do
                     (Proxy :: Proxy '[AuthHandler Wai.Request ()])
                     (\ioAct -> Handler . ExceptT $ first (apiErrorToServerError . exceptionHandler) <$> try ioAct)
                   $ mainServer rsaKeyPair crs cfg'' ref
-      ModeDistribute removeNoDate cleanDb -> do
+      ModeDistribute forceDist cleanDb -> do
         forM_ [1 :: Int ..] $ const $ do
           now <- getPOSIXTime
-          removeUtxoRun crs cfg'' removeNoDate
+          removeUtxoRun crs cfg'' forceDist
           logInfoS "UTxO Accumulator server finished fund distribution."
           when cleanDb $ do
             logInfoS "Cleaning transaction database from old transactions and those with no timer..."

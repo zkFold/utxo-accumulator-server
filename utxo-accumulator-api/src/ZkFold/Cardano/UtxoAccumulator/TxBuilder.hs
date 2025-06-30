@@ -63,7 +63,7 @@ addUtxoRun crs cfg@Config {..} ref sender recipient l r distTime = do
     unsignedTx <$> buildTxBody txSkel
 
 removeUtxoRun :: UtxoAccumulatorCRS -> Config -> Bool -> IO ()
-removeUtxoRun crs cfg@Config {..} removeNoDate = do
+removeUtxoRun crs cfg@Config {..} forceDist = do
   now <- getPOSIXTime
   cache <- fullSyncFromConfig cfg
 
@@ -79,7 +79,7 @@ removeUtxoRun crs cfg@Config {..} removeNoDate = do
     let eligible =
           [ (recipient, l, r, ttRef)
           | (AccumulatorDataKey recipient l, AccumulatorDataItem r mDistTime ttRef) <- toList m
-          , maybe removeNoDate (<= now) mDistTime
+          , forceDist || maybe False (<= now) mDistTime
           , utxoAccumulatorHashWrapper (addressToPlutus recipient) l r `elem` fst (cache ! ttRef)
           , utxoAccumulatorAddressHash (addressToPlutus recipient) l `notElem` snd (cache ! ttRef)
           ]
@@ -99,4 +99,4 @@ removeUtxoRun crs cfg@Config {..} removeNoDate = do
         -- Update the database by removing the UTXO
         putUtxoAccumulatorData cfgDatabasePath $ delete (AccumulatorDataKey recipient l) m
         -- Repeat until all eligible UTxOs are removed
-        removeUtxoRun crs cfg removeNoDate
+        removeUtxoRun crs cfg forceDist
