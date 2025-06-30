@@ -7,7 +7,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), eitherDecodeStric
 import Data.ByteString.Base64 qualified as B64
 import Data.ByteString.Char8 qualified as BS
 import Data.Swagger qualified as Swagger
-import Data.Time.Clock.POSIX (POSIXTime)
+import Data.Time.Clock.POSIX (POSIXTime, getPOSIXTime)
 import Deriving.Aeson
 import GHC.TypeLits (Symbol)
 import GeniusYield.Imports ((&))
@@ -81,13 +81,21 @@ handleTransaction crs cfg ref rsaKeyPair (EncryptedTransaction b64) = do
   logInfo cfg "Transaction API requested (encrypted)."
   case B64.decode (BS.pack b64) >>= decryptWithPrivateKey rsaKeyPair >>= eitherDecodeStrict of
     Left err -> fail $ "Transaction decode failed: " ++ err
-    Right Transaction {..} ->
-      addUtxoRun
-        crs
-        cfg
-        ref
-        (addressFromBech32 txSender)
-        (addressFromBech32 txRecipient)
-        (fromConstant txNonceL)
-        (fromConstant txNonceR)
-        txDistributionTime
+    Right Transaction {..} -> do
+      let maxDuration :: POSIXTime
+          maxDuration = 14 * 24 * 60 * 60  -- 2 weeks in seconds
+      now <- getPOSIXTime
+      -- Check if distribution time is too far in the future
+      case txDistributionTime of
+        Just t | t > now + maxDuration ->
+          fail "Distribution time is too far in the future (max 2 weeks allowed)."
+        _ ->
+          addUtxoRun
+            crs
+            cfg
+            ref
+            (addressFromBech32 txSender)
+            (addressFromBech32 txRecipient)
+            (fromConstant txNonceL)
+            (fromConstant txNonceR)
+            txDistributionTime
