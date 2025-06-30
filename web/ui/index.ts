@@ -186,8 +186,12 @@ addressInputGrid.addEventListener('input', () => {
   const val = addressInputGrid.value.trim();
   if (/^\$[a-zA-Z0-9._-]+$/.test(val)) {
     resolveHandleBtn.style.display = '';
+    // Set button label with green $ and handle in italic
+    const handle = val.slice(1);
+    resolveHandleBtn.innerHTML = `Resolve <span style="font-style:italic"><span style="color:#1db954">$</span>${handle ? handle : ''}</span>`;
   } else {
     resolveHandleBtn.style.display = 'none';
+    resolveHandleBtn.textContent = '';
   }
 });
 
@@ -205,7 +209,7 @@ resolveHandleBtn.addEventListener('click', async () => {
     setResultMessage(resultDivGrid, e instanceof Error ? e.message : String(e));
   } finally {
     resolveHandleBtn.disabled = false;
-    resolveHandleBtn.textContent = 'Resolve Ada Handle';
+    resolveHandleBtn.textContent = '';
   }
 });
 
