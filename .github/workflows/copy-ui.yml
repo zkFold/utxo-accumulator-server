@@ -47,3 +47,11 @@ jobs:
           git add ui
           git commit -m "Update UI distribution from source repo" || echo "No changes to commit"
           git push
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.ENCOINS_V2_TOKEN }}
+          publish_dir: ./web/ui/dist
+          publish_branch: gh-pages
+          external_repository: encryptedcoins/encoins-v2
