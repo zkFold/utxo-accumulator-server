@@ -28,7 +28,10 @@ removalTimeSelect.id = 'removalTimeSelect';
 removalTimeSelect.style.width = '350px';
 const removalOptions = [
   { label: '1 hour from now', value: '3600', default: true },
+  { label: '6 hours from now', value: String(6 * 3600) },
+  { label: '12 hours from now', value: String(12 * 3600) },
   { label: '1 day from now', value: String(24 * 3600) },
+  { label: '2 days from now', value: String(2 * 24 * 3600) },
   { label: '1 week from now', value: String(7 * 24 * 3600) },
   { label: 'No timer', value: '' },
 ];
