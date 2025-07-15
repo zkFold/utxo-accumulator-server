@@ -43,7 +43,7 @@ import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS)
 
 runServer :: ServerOptions -> IO ()
 runServer ServerOptions {..} = do
-  sc@ServerConfig {..} <- serverConfigOptionalFPIO soConfigPath
+  sc@ServerConfig {..} <- serverConfigOptionalFPIO (Just soConfigPath)
   (serverPaymentKey, serverStakeKey, serverAddr) <- fromJust <$> signingKeysFromServerWallet scNetworkId scWallet
   let coreCfg = coreConfigFromServerConfig sc
   rsaKeyPair <- generateRSAKeyPair
@@ -87,7 +87,7 @@ runServer ServerOptions {..} = do
     ref <- fromJust <$> threadTokenRefFromSync cfg''
 
     -- Update config file with maybeScriptRef and maybeThreadTokenRef values
-    updateConfigYaml (fromMaybe "config.yaml" soConfigPath) (cfgMaybeScriptRef cfg') (cfgThreadTokenRefs cfg'')
+    updateConfigYaml soConfigPath (cfgMaybeScriptRef cfg') (cfgThreadTokenRefs cfg'')
 
     -- Start the distribution thread
     _ <- forkIO $ distributionThread crs cfg'' soForceDistribute soCleanDb logInfoS scDatabasePath

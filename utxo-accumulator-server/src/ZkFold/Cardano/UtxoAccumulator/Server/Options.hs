@@ -6,7 +6,7 @@ module ZkFold.Cardano.UtxoAccumulator.Server.Options (
 import Options.Applicative
 
 data ServerOptions = ServerOptions
-  { soConfigPath :: Maybe FilePath
+  { soConfigPath :: FilePath
   , soForceDistribute :: Bool
   , soCleanDb :: Bool
   }
@@ -14,13 +14,11 @@ data ServerOptions = ServerOptions
 parseServerOptions :: Parser ServerOptions
 parseServerOptions =
   ServerOptions
-    <$> optional
-      ( strOption
-          ( long "config"
-              <> metavar "CONFIG"
-              <> short 'c'
-              <> help "Path of optional configuration file. If not provided, \"SERVER_CONFIG\" environment variable is used."
-          )
+    <$> strOption
+      ( long "config"
+          <> metavar "CONFIG"
+          <> short 'c'
+          <> help "Path of configuration file."
       )
     <*> switch
       ( long "force"
