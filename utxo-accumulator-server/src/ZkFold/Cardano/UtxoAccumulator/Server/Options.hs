@@ -1,56 +1,32 @@
 module ZkFold.Cardano.UtxoAccumulator.Server.Options (
-  parseCommand,
-  runCommand,
+  parseServerOptions,
+  ServerOptions (..),
 ) where
 
 import Options.Applicative
-import ZkFold.Cardano.UtxoAccumulator.Server.Run (Mode (..), runServer)
 
--- Add a Bool for cleanup to Distribute
--- (Maybe FilePath, Bool, Bool): config, distribute-no-date, cleanup
+data ServerOptions = ServerOptions
+  { soConfigPath :: Maybe FilePath
+  , soForceDistribute :: Bool
+  , soCleanDb :: Bool
+  }
 
-data Command = Accumulate (Maybe FilePath) | Distribute (Maybe FilePath) Bool Bool
-
-parseCommandOptions :: Parser (Maybe FilePath)
-parseCommandOptions =
-  optional
-    ( strOption
-        ( long "config"
-            <> metavar "CONFIG"
-            <> short 'c'
-            <> help "Path of optional configuration file. If not provided, \"SERVER_CONFIG\" environment variable is used."
-        )
-    )
-
-parseDistributeOptions :: Parser Command
-parseDistributeOptions =
-  Distribute
-    <$> parseCommandOptions
+parseServerOptions :: Parser ServerOptions
+parseServerOptions =
+  ServerOptions
+    <$> optional
+      ( strOption
+          ( long "config"
+              <> metavar "CONFIG"
+              <> short 'c'
+              <> help "Path of optional configuration file. If not provided, \"SERVER_CONFIG\" environment variable is used."
+          )
+      )
     <*> switch
       ( long "force"
-          <> help "If set, distribute (remove) all valid UTxOs. Default: don't distribute UTxOs with the timer in the future or with no timer."
+          <> help "If set, distributes all valid UTxOs regardless of their timer status. Default: not set."
       )
     <*> switch
       ( long "clean-db"
-          <> help "If set, clean the transaction database from old transactions and those with no timer before distributing. Default: do not clean the database."
+          <> help "If set, cleans the transaction database from old transactions and those with no timer before distributing. Default: not set."
       )
-
-parseCommand :: Parser Command
-parseCommand =
-  subparser $
-    mconcat
-      [ command
-          "accumulate"
-          ( info (Accumulate <$> parseCommandOptions <**> helper) $
-              progDesc "Serve endpoints"
-          )
-      , command
-          "distribute"
-          ( info (parseDistributeOptions <**> helper) $
-              progDesc "Distribute endpoints"
-          )
-      ]
-
-runCommand :: Command -> IO ()
-runCommand (Accumulate mcfp) = runServer mcfp ModeAccumulate
-runCommand (Distribute mcfp forceDist cleanDb) = runServer mcfp (ModeDistribute forceDist cleanDb)

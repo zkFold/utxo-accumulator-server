@@ -80,7 +80,6 @@ library
     vector,
     zkfold-cardano,
     zkfold-cardano-scripts,
-
   hs-source-dirs: src
 
 test-suite utxo-accumulator-api-tests
