@@ -45,6 +45,7 @@ getSyncParams Config {..} refs = do
                   , syncThreadToken = threadToken ref
                   , syncMaestroToken = cfgMaestroToken
                   , syncgNetworkId = cfgNetworkId
+                  , syncCachePath = cfgCachePath
                   }
           Nothing -> return Nothing
   catMaybes <$> mapM getParams refs

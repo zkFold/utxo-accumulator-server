@@ -1,5 +1,6 @@
 accumulationValue:
   acf8a16a63d0203e18a1fa1050e21c0754c10ea55c5e24ae15193325.494e4459: 1000
+cachePath: database/cache.json
 coreProvider:
   maestroToken: aCmZhlBBq7f3dHls9INwu9KlsNQwUXS3
   turboSubmit: false

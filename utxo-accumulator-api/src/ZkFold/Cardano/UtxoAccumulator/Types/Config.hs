@@ -8,6 +8,7 @@ data Config = Config
   , cfgProviders :: GYProviders
   , cfgMaestroToken :: String
   , cfgDatabasePath :: FilePath
+  , cfgCachePath :: FilePath
   , cfgPaymentKey :: GYSomePaymentSigningKey
   , cfgStakeKey :: Maybe GYSomeStakeSigningKey
   , cfgAddress :: GYAddress

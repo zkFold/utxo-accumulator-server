@@ -48,6 +48,7 @@ utxoAccumulatorTests setup =
                   , cfgStakeKey = Just $ AGYStakeSigningKey serverStakeKey
                   , cfgAddress = serverAddr
                   , cfgDatabasePath = "database/txs.json"
+                  , cfgCachePath = "database/cache.json"
                   , cfgAccumulationValue = valueFromLovelace 100_000_000
                   , cfgMaybeScriptRef = Nothing
                   , cfgThreadTokenRefs = []

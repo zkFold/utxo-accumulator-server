@@ -60,6 +60,7 @@ data ServerConfig = ServerConfig
   { scNetworkId :: !GYNetworkId
   , scCoreProvider :: !GYCoreProviderInfo
   , scDatabasePath :: !FilePath
+  , scCachePath :: !FilePath
   , scLogging :: ![GYLogScribeConfig]
   , scPort :: !Port
   , scServerApiKey :: !(Confidential Text)

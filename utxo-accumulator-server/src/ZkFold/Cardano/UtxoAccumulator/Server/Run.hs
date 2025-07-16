@@ -62,6 +62,7 @@ runServer ServerOptions {..} = do
             , cfgStakeKey = Just serverStakeKey
             , cfgAddress = serverAddr
             , cfgDatabasePath = scDatabasePath
+            , cfgCachePath = scCachePath
             , cfgAccumulationValue = scAccumulationValue
             , cfgMaybeScriptRef = scMaybeScriptRef
             , cfgThreadTokenRefs = scThreadTokenRefs

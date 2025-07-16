@@ -32,7 +32,7 @@ trySync SyncParams {..} = do
 
 fullSyncInternal :: SyncParams -> IO ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point])
 fullSyncInternal sp@SyncParams {..} = do
-  mCache <- cacheRestore syncStateRef
+  mCache <- cacheRestore syncCachePath syncStateRef
   case mCache of
     Just cache -> return cache
     Nothing -> do
@@ -48,7 +48,7 @@ fullSyncInternal sp@SyncParams {..} = do
 fullSync :: SyncParams -> IO ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point])
 fullSync sp@SyncParams {..} = do
   result <- fullSyncInternal sp
-  cacheUpdate syncStateRef result
+  cacheUpdate syncCachePath syncStateRef result
   return result
 
 fullSyncFromConfig :: Config -> IO Cache

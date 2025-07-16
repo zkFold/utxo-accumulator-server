@@ -8,5 +8,6 @@ data SyncParams = SyncParams
   , syncMaestroToken :: String
   , syncThreadToken :: GYAssetClass
   , syncStateRef :: GYTxOutRef
+  , syncCachePath :: String
   }
   deriving (Show, Eq)

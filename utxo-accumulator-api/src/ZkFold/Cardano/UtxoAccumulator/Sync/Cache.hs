@@ -9,21 +9,17 @@ import ZkFold.Cardano.UtxoAccumulator.Orphans ()
 import ZkFold.Prelude (readFileJSON, writeFileJSON)
 import Prelude hiding (lookup)
 
--- | Path to the cache file
-cacheFile :: FilePath
-cacheFile = "database/cache.json"
-
 type Cache = Map GYTxOutRef ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point])
 
-cacheRestore :: GYTxOutRef -> IO (Maybe ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point]))
-cacheRestore ref = do
+cacheRestore :: FilePath -> GYTxOutRef -> IO (Maybe ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point]))
+cacheRestore cacheFile ref = do
   cacheExists <- doesFileExist cacheFile
   if cacheExists
     then lookup ref <$> readFileJSON @Cache cacheFile
     else return Nothing
 
-cacheUpdate :: GYTxOutRef -> ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point]) -> IO ()
-cacheUpdate ref (hs, as) = do
+cacheUpdate :: FilePath -> GYTxOutRef -> ([ScalarFieldOf BLS12_381_G1_Point], [ScalarFieldOf BLS12_381_G1_Point]) -> IO ()
+cacheUpdate cacheFile ref (hs, as) = do
   cacheExists <- doesFileExist cacheFile
   if cacheExists
     then do
