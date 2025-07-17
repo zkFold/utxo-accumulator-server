@@ -2,16 +2,20 @@ module ZkFold.Cardano.UtxoAccumulator.Test (
   utxoAccumulatorTests,
 ) where
 
+import Control.Monad (when)
 import GeniusYield.Imports ((&))
 import GeniusYield.Test.Privnet.Ctx
 import GeniusYield.Test.Privnet.Setup
 import GeniusYield.TxBuilder
 import GeniusYield.Types
+import System.Directory (doesDirectoryExist, removeDirectoryRecursive, setCurrentDirectory)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCaseSteps)
 import ZkFold.Algebra.Field (toZp)
 import ZkFold.Cardano.UtxoAccumulator.Constants (protocolTreasuryAddress, utxoAccumulatorAddress, utxoAccumulatorCRS, utxoAccumulatorScript)
 import ZkFold.Cardano.UtxoAccumulator.IO (runSignerWithConfig)
+import ZkFold.Cardano.UtxoAccumulator.Sync (cacheUpdate)
+import ZkFold.Cardano.UtxoAccumulator.Transition (utxoAccumulatorHashWrapper)
 import ZkFold.Cardano.UtxoAccumulator.TxBuilder
 import ZkFold.Cardano.UtxoAccumulator.Types.Config (Config (..))
 
@@ -28,7 +32,11 @@ utxoAccumulatorTests setup =
     "utxo-accumulator-tests"
     [ testCaseSteps "able to initialize the server, initialize the accumulator, and perform accumulation-distribution process" $
         \info -> withSetup info setup $ \ctx -> do
-          let nid = ctxNetworkId ctx
+          -- Set the the project root as the current directory
+          setCurrentDirectory "../"
+
+          let outputDir = "utxo-accumulator-api/test/output"
+              nid = ctxNetworkId ctx
               user1 = ctxUserF ctx
               user2 = ctxUser2 ctx
 
@@ -47,8 +55,8 @@ utxoAccumulatorTests setup =
                   , cfgPaymentKey = AGYPaymentSigningKey serverPaymentKey
                   , cfgStakeKey = Just $ AGYStakeSigningKey serverStakeKey
                   , cfgAddress = serverAddr
-                  , cfgDatabasePath = "database/txs.json"
-                  , cfgCachePath = "database/cache.json"
+                  , cfgDatabasePath = outputDir <> "/txs.json"
+                  , cfgCachePath = outputDir <> "/cache.json"
                   , cfgAccumulationValue = valueFromLovelace 100_000_000
                   , cfgMaybeScriptRef = Nothing
                   , cfgThreadTokenRefs = []
@@ -81,6 +89,9 @@ utxoAccumulatorTests setup =
               recipient = userAddr user2
               l = toZp 21
               r = toZp 42
+              hs = [utxoAccumulatorHashWrapper (addressToPlutus recipient) l r]
+              as = []
+
           -- Default: no scheduled removal
           tx <- addUtxoRun crs cfg'' (head $ cfgThreadTokenRefs cfg'') sender recipient l r Nothing
 
@@ -96,6 +107,9 @@ utxoAccumulatorTests setup =
           ctxRunQuery ctx (utxosAtAddress serverAddr Nothing)
             >>= info . ("Added a utxo to accumulator. Server's utxos: " <>) . show
 
+          -- Create cache
+          cacheUpdate (cfgCachePath cfg'') (head $ cfgThreadTokenRefs cfg'') (hs, as)
+
           -- Removing funds from the accumulator
           removeUtxoRun crs cfg'' True
           ctxRunQuery ctx (utxosAtAddress serverAddr Nothing)
@@ -103,4 +117,9 @@ utxoAccumulatorTests setup =
 
           ctxRunQuery ctx (utxosAtAddress protocolTreasuryAddress Nothing)
             >>= info . ("End-to-end run completed. Treasury's utxos: " <>) . show
+
+          -- Clean up the output directory
+          info "Cleaning up output directory..."
+          exists <- doesDirectoryExist outputDir
+          when exists $ removeDirectoryRecursive outputDir
     ]

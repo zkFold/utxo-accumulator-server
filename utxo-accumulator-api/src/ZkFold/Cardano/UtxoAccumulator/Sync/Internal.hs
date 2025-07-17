@@ -1,7 +1,8 @@
 module ZkFold.Cardano.UtxoAccumulator.Sync.Internal where
 
 import Data.List (maximumBy)
-import Data.Map (fromList, toList)
+import Data.Map (fromList, singleton, toList)
+import Data.Maybe (fromJust)
 import GeniusYield.Types
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
@@ -53,8 +54,11 @@ fullSync sp@SyncParams {..} = do
 
 fullSyncFromConfig :: Config -> IO Cache
 fullSyncFromConfig cfg@Config {..} = do
-  syncParamsList <- zip cfgThreadTokenRefs <$> runQueryWithConfig cfg (getSyncParams cfg cfgThreadTokenRefs)
-  fromList <$> mapM (\(ref, sp) -> do r <- fullSync sp; return (ref, r)) syncParamsList
+  case cfgNetworkId of
+    GYPrivnet _ -> singleton (head cfgThreadTokenRefs) . fromJust <$> cacheRestore cfgCachePath (head cfgThreadTokenRefs)
+    _ -> do
+      syncParamsList <- zip cfgThreadTokenRefs <$> runQueryWithConfig cfg (getSyncParams cfg cfgThreadTokenRefs)
+      fromList <$> mapM (\(ref, sp) -> do r <- fullSync sp; return (ref, r)) syncParamsList
 
 threadTokenRefFromSync :: Config -> IO (Maybe GYTxOutRef)
 threadTokenRefFromSync cfg = do
