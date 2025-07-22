@@ -1,0 +1,47 @@
+openapi: "3.0.1"
+info:
+  title: "utxo-accumulator"
+  version: "2025-04-05 11:31:07UTC"
+servers:
+- url: "https://uy6xvf96yl.execute-api.eu-central-1.amazonaws.com/{basePath}"
+  variables:
+    basePath:
+      default: ""
+paths:
+  /$default:
+    x-amazon-apigateway-any-method:
+      isDefaultRoute: true
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "1.0"
+        type: "http_proxy"
+        httpMethod: "ANY"
+        uri: "http://ec2-3-76-34-185.eu-central-1.compute.amazonaws.com:8084"
+        connectionType: "INTERNET"
+        timeoutInMillis: 29000
+x-amazon-apigateway-cors:
+  allowMethods:
+  - "GET"
+  - "OPTIONS"
+  - "POST"
+  - "PUT"
+  allowHeaders:
+  - "accept"
+  - "accept-language"
+  - "api-key"
+  - "content-language"
+  - "content-type"
+  exposeHeaders:
+  - "authorization"
+  - "content-type"
+  - "content-type: application/json"
+  - "date, x-api-id"
+  - "x-amz-date"
+  - "x-api-key"
+  - "x-requested-with"
+  maxAge: 300
+  allowCredentials: true
+  allowOrigins:
+  - "http://localhost:5173"
+  - "https://encryptedcoins.github.io"
+  - "https://test.encoins.io"
+x-amazon-apigateway-importexport-version: "1.0"
