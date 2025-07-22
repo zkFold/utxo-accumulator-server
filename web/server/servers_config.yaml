@@ -2,12 +2,12 @@ servers:
 - name: Primary Relay
   url: http://ec2-3-76-34-185.eu-central-1.compute.amazonaws.com
   port: 8082
-  aws_api_url: https://wsqb9r6nha.execute-api.eu-central-1.amazonaws.com/
+  aws_api_url: https://wsqb9r6nha.execute-api.eu-central-1.amazonaws.com
 - name: Primary Relay
   url: http://ec2-3-76-34-185.eu-central-1.compute.amazonaws.com
   port: 8083
-  aws_api_url: https://hjnhumxtzk.execute-api.eu-central-1.amazonaws.com/
+  aws_api_url: https://hjnhumxtzk.execute-api.eu-central-1.amazonaws.com
 - name: Primary Relay
   url: http://ec2-3-76-34-185.eu-central-1.compute.amazonaws.com
   port: 8084
-  aws_api_url: https://egi7quewll.execute-api.eu-central-1.amazonaws.com/
+  aws_api_url: https://egi7quewll.execute-api.eu-central-1.amazonaws.com
