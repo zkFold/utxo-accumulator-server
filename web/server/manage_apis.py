@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """
-AWS API Gateway Management Script for UTxO Accumulator
+AWS API Gateway v2 Management Script for UTxO Accumulator
 
 This script:
-1. Deletes all existing APIs with 'utxo-accumulator--' in the title
-2. Creates new APIs for each server defined in servers_config.yaml
-3. Uses server_api.yaml as a template for each new API
+1. Deletes all existing HTTP APIs with 'utxo-accumulator--' in the title
+2. Creates new HTTP APIs for each server defined in servers_config.yaml
+3. Configures CORS, integrations, and routes programmatically
 """
 
 import boto3
 import yaml
-import json
 import sys
 import time
 from botocore.exceptions import ClientError
@@ -19,25 +18,11 @@ from botocore.exceptions import ClientError
 class APIGatewayManager:
     def __init__(self):
         try:
-            self.client = boto3.client('apigateway')
-            print("✓ AWS API Gateway client initialized")
+            self.client = boto3.client('apigatewayv2')
+            print("✓ AWS API Gateway v2 (HTTP API) client initialized")
         except Exception as e:
             print(f"✗ Failed to initialize AWS client: {e}")
             print("Make sure AWS credentials are configured (aws configure)")
-            sys.exit(1)
-
-    def load_template(self, template_path="server_api.yaml"):
-        """Load the API template from YAML file"""
-        try:
-            with open(template_path, 'r') as file:
-                template = yaml.safe_load(file)
-            print(f"✓ Loaded template from {template_path}")
-            return template
-        except FileNotFoundError:
-            print(f"✗ Template file {template_path} not found")
-            sys.exit(1)
-        except yaml.YAMLError as e:
-            print(f"✗ Error parsing YAML template: {e}")
             sys.exit(1)
 
     def load_servers_config(self, config_path="servers_config.yaml"):
@@ -56,16 +41,16 @@ class APIGatewayManager:
             sys.exit(1)
 
     def delete_existing_apis(self):
-        """Delete all APIs with 'utxo-accumulator--' in the title"""
+        """Delete all HTTP APIs with 'utxo-accumulator--' in the title"""
         try:
             print("\n🗑️  Searching for existing UTxO Accumulator APIs...")
 
-            # Get all APIs
-            response = self.client.get_rest_apis(limit=500)
+            # Get all HTTP APIs
+            response = self.client.get_apis(MaxResults='500')
             apis_to_delete = []
 
-            for api in response['items']:
-                if 'utxo-accumulator--' in api['name']:
+            for api in response.get('Items', []):
+                if 'utxo-accumulator--' in api['Name']:
                     apis_to_delete.append(api)
 
             if not apis_to_delete:
@@ -74,12 +59,12 @@ class APIGatewayManager:
 
             print(f"Found {len(apis_to_delete)} APIs to delete:")
             for api in apis_to_delete:
-                print(f"  - {api['name']} (ID: {api['id']})")
+                print(f"  - {api['Name']} (ID: {api['ApiId']})")
 
             # Delete each API with persistent retry
             deleted_count = 0
             for i, api in enumerate(apis_to_delete):
-                print(f"Deleting {api['name']} ({i+1}/{len(apis_to_delete)})...")
+                print(f"Deleting {api['Name']} ({i+1}/{len(apis_to_delete)})...")
 
                 # Keep trying until success or max attempts reached
                 max_attempts = 10
@@ -91,8 +76,8 @@ class APIGatewayManager:
                         if attempt > 1:
                             print(f"  Attempt {attempt}/{max_attempts}...")
 
-                        self.client.delete_rest_api(restApiId=api['id'])
-                        print(f"✓ Deleted {api['name']}")
+                        self.client.delete_api(ApiId=api['ApiId'])
+                        print(f"✓ Deleted {api['Name']}")
                         deleted_count += 1
                         deleted = True
 
@@ -104,10 +89,10 @@ class APIGatewayManager:
                                 time.sleep(wait_time)
                                 attempt += 1
                             else:
-                                print(f"✗ Failed to delete {api['name']} after {max_attempts} attempts (rate limiting)")
+                                print(f"✗ Failed to delete {api['Name']} after {max_attempts} attempts (rate limiting)")
                                 break
                         else:
-                            print(f"✗ Failed to delete {api['name']}: {e}")
+                            print(f"✗ Failed to delete {api['Name']}: {e}")
                             break
 
                 # Small delay between different APIs to avoid immediate rate limiting
@@ -125,8 +110,8 @@ class APIGatewayManager:
             print(f"✗ Error accessing API Gateway: {e}")
             sys.exit(1)
 
-    def create_api_for_server(self, server, template):
-        """Create a new API for a specific server"""
+    def create_api_for_server(self, server):
+        """Create a new HTTP API for a specific server"""
         raw_url = server['url']
         port = server['port']
         name = server.get('name', '')  # Optional user-friendly name
@@ -135,37 +120,80 @@ class APIGatewayManager:
         url = raw_url.replace('http://', '').replace('https://', '')
 
         api_name = f"utxo-accumulator--{url}--{port}"
+        backend_uri = f"http://{url}:{port}"
 
         display_name = f"{name} ({url}:{port})" if name else f"{url}:{port}"
-        print(f"\n🚀 Creating API for: {display_name}")
+        print(f"\n🚀 Creating HTTP API for: {display_name}")
         print(f"   API Name: {api_name}")
-
-        # Clone template and modify for this server
-        api_spec = template.copy()
-
-        # Update title
-        api_spec['info']['title'] = api_name
-
-        # Update URI in the integration (always use http:// for backend)
-        backend_uri = f"http://{url}:{port}"
-        if 'paths' in api_spec and '/$default' in api_spec['paths']:
-            path_config = api_spec['paths']['/$default']['x-amazon-apigateway-any-method']
-            integration = path_config['x-amazon-apigateway-integration']
-            integration['uri'] = backend_uri
+        print(f"   Backend: {backend_uri}")
 
         try:
-            # Import the API
-            response = self.client.import_rest_api(
-                body=json.dumps(api_spec),
-                parameters={
-                    'endpointConfigurationTypes': 'REGIONAL'
+            # Step 1: Create the HTTP API with CORS
+            api_response = self.client.create_api(
+                Name=api_name,
+                ProtocolType='HTTP',
+                CorsConfiguration={
+                    'AllowCredentials': True,
+                    'AllowHeaders': [
+                        'accept', 'accept-language', 'api-key', 'content-language',
+                        'content-type', 'authorization', 'x-amz-date', 'x-api-key',
+                        'x-requested-with'
+                    ],
+                    'AllowMethods': ['GET', 'POST', 'PUT', 'OPTIONS'],
+                    'AllowOrigins': [
+                        'http://localhost:5173',
+                        'https://encryptedcoins.github.io',
+                        'https://test.encoins.io',
+                        'https://app.encoins.io'
+                    ],
+                    'ExposeHeaders': [
+                        'authorization', 'content-type', 'date', 'x-api-id',
+                        'x-amz-date', 'x-api-key', 'x-requested-with'
+                    ],
+                    'MaxAge': 300
                 }
             )
+            
+            api_id = api_response['ApiId']
+            print(f"✓ Created HTTP API: {api_id}")
 
-            api_id = response['id']
+            # Step 2: Create integration to backend
+            integration_response = self.client.create_integration(
+                ApiId=api_id,
+                IntegrationType='HTTP_PROXY',
+                IntegrationUri=backend_uri,
+                IntegrationMethod='ANY',
+                ConnectionType='INTERNET',
+                TimeoutInMillis=29000,
+                PayloadFormatVersion='1.0'
+            )
+            
+            integration_id = integration_response['IntegrationId']
+            print(f"✓ Created integration: {integration_id}")
+
+            # Step 3: Create default route
+            route_response = self.client.create_route(
+                ApiId=api_id,
+                RouteKey='$default',
+                Target=f'integrations/{integration_id}'
+            )
+            
+            route_id = route_response['RouteId']
+            print(f"✓ Created route: {route_id}")
+
+            # Step 4: Create and deploy stage
+            stage_response = self.client.create_stage(
+                ApiId=api_id,
+                StageName='$default',
+                AutoDeploy=True
+            )
+            
+            print(f"✓ Created and deployed stage: $default")
+
+            # Construct endpoint URL
             api_endpoint = f"https://{api_id}.execute-api.{self.client.meta.region_name}.amazonaws.com/"
 
-            print(f"✓ Created API: {api_name}")
+            print(f"✓ HTTP API deployment completed")
             print(f"  API ID: {api_id}")
             print(f"  Endpoint: {api_endpoint}")
             print(f"  Backend: {backend_uri}")
@@ -182,7 +210,7 @@ class APIGatewayManager:
             }
 
         except ClientError as e:
-            print(f"✗ Failed to create API for {display_name}: {e}")
+            print(f"✗ Failed to create HTTP API for {display_name}: {e}")
             return None
 
     def update_servers_config_with_apis(self, created_apis, config_path="servers_config.yaml"):
@@ -221,10 +249,10 @@ class APIGatewayManager:
 
     def run(self):
         """Main execution function"""
-        print("🎯 UTxO Accumulator API Gateway Manager")
+        print("🎯 UTxO Accumulator HTTP API Gateway Manager")
         print("=" * 50)
 
-        # Load configuration and template
+        # Load configuration
         servers = self.load_servers_config()
 
         # Step 1: Delete existing APIs (always do cleanup)
@@ -240,9 +268,8 @@ class APIGatewayManager:
             print("3. Run this script again")
             return
 
-        # Step 3: Load template and create new APIs
-        template = self.load_template()
-        print(f"\n🏗️  Creating {len(servers)} new APIs...")
+        # Step 3: Create new HTTP APIs
+        print(f"\n🏗️  Creating {len(servers)} new HTTP APIs...")
         created_apis = []
 
         for server in servers:
@@ -250,7 +277,7 @@ class APIGatewayManager:
                 print(f"✗ Invalid server configuration (missing url or port): {server}")
                 continue
 
-            api_info = self.create_api_for_server(server, template)
+            api_info = self.create_api_for_server(server)
             if api_info:
                 created_apis.append(api_info)
 
@@ -263,7 +290,7 @@ class APIGatewayManager:
 
         # Summary
         print("\n📊 Summary:")
-        print(f"✓ Successfully created {len(created_apis)} APIs")
+        print(f"✓ Successfully created {len(created_apis)} HTTP APIs")
 
         if created_apis:
             print("\n🔗 API Endpoints:")
@@ -282,20 +309,19 @@ class APIGatewayManager:
 def main():
     if len(sys.argv) > 1 and sys.argv[1] in ['-h', '--help']:
         print("""
-UTxO Accumulator API Gateway Manager
+UTxO Accumulator HTTP API Gateway Manager
 
 Usage: python3 manage_apis.py
 
-This script manages AWS API Gateway APIs for UTxO Accumulator servers.
+This script manages AWS API Gateway v2 (HTTP APIs) for UTxO Accumulator servers.
 
 Files required:
-- server_api.yaml: Template API specification
 - servers_config.yaml: List of servers to create APIs for
 
 The script will:
-1. Delete all existing APIs with 'utxo-accumulator--' in the name
-2. Create new APIs for each server in the configuration
-3. Use the template as base, updating title and backend URI
+1. Delete all existing HTTP APIs with 'utxo-accumulator--' in the name
+2. Create new HTTP APIs for each server in the configuration
+3. Configure CORS, integrations, and routes programmatically
 
 Make sure AWS credentials are configured:
   aws configure
@@ -305,7 +331,7 @@ Make sure AWS credentials are configured:
     try:
         manager = APIGatewayManager()
         manager.run()
-        print("🎉 API management completed successfully!")
+        print("🎉 HTTP API management completed successfully!")
 
     except KeyboardInterrupt:
         print("\n\n⚠️  Operation cancelled by user")
