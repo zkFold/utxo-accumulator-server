@@ -125,4 +125,6 @@ jobs:
     - name: Symlink cardano-node binaries
       run: cabal install --package-env=$(pwd) --overwrite-policy=always cardano-cli cardano-node
     - name: Run tests (cabal)
-      run: cabal test all
+      run: |
+        mkdir -p utxo-accumulator-api/test/output
+        cabal test all
