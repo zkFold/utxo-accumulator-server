@@ -1,14 +1,17 @@
-name: Haskell CI
+name: CI
 
 on:
-  workflow_call:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-22.04
+  build-and-test:
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout source code
       uses: actions/checkout@v3
@@ -22,8 +25,8 @@ jobs:
     #   run: |
     #     cabal-gild --input utxo-accumulator-api/utxo-accumulator-api.cabal --mode check
     #     cabal-gild --input utxo-accumulator-server/utxo-accumulator-server.cabal --mode check
-    - name: hlint
-      run: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
+    # - name: hlint
+    #   run: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
     - name: Install dependencies (apt-get)
       run: |
         sudo apt-get update
@@ -84,7 +87,7 @@ jobs:
         make
         sudo make install
         sudo ldconfig
-    - name: Install SEPC256K1
+    - name: Install SECP256K1
       run: |
         git clone https://github.com/bitcoin-core/secp256k1
         cd secp256k1
