@@ -22,13 +22,13 @@ This repository houses off-chain code and server endpoints to interact with [zkF
 
 ### Server Deployment
 
-To deploy the UTxO Accumulator Server in a production environment, follow these steps:
+To deploy the UTxO Accumulator Server, follow these steps:
 
 #### Prerequisites
 
-The server requires several cryptographic libraries to be installed on the target system:
+The server requires several cryptographic libraries to be installed on your machine (same as for running `cardano-node`):
 
-1. **Install LIBSODIUM** (cryptographic library used by Cardano):
+1. **Install LIBSODIUM**:
    ```bash
    git clone https://github.com/input-output-hk/libsodium
    cd libsodium
@@ -40,7 +40,7 @@ The server requires several cryptographic libraries to be installed on the targe
    sudo ldconfig
    ```
 
-2. **Install SECP256K1** (elliptic curve cryptography library):
+2. **Install SECP256K1**:
    ```bash
    git clone https://github.com/bitcoin-core/secp256k1
    cd secp256k1
@@ -56,7 +56,7 @@ The server requires several cryptographic libraries to be installed on the targe
    fi
    ```
 
-3. **Install BLST** (BLS12-381 signature library):
+3. **Install BLST**:
    ```bash
    BLST_VERSION='v0.3.11'
    git clone --depth 1 --branch ${BLST_VERSION} https://github.com/supranational/blst
@@ -83,7 +83,7 @@ The server requires several cryptographic libraries to be installed on the targe
    sudo chmod u=rw,go=r /usr/local/lib/libblst.a /usr/local/lib/pkgconfig/libblst.pc /usr/local/include/blst*
    ```
 
-#### Deployment Process
+#### Server installation
 
 1. **Create a new directory for the server**:
    ```bash
@@ -97,7 +97,7 @@ The server requires several cryptographic libraries to be installed on the targe
    chmod +x setup.sh
    ```
 
-3. **Run the deployment script**:
+3. **Run the setup script**:
    ```bash
    ./setup.sh
    ```
@@ -107,7 +107,7 @@ The server requires several cryptographic libraries to be installed on the targe
 
    a. **Choose a configuration file** to edit (e.g., `config/100ada.yaml` for a 100 ADA pool, etc.)
 
-   b. **Edit your chosen configuration file** and update the following required fields:
+   b. **Update the following required fields**:
 
    - **`port`**: Set your desired port number (it must be open on your machine)
    - **`maestroToken`**: Update with your Maestro API token
