@@ -1,0 +1,87 @@
+name: Test Server Deployment
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  # Allow manual triggering of the workflow
+  workflow_dispatch:
+
+jobs:
+  test-deployment:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Create test deployment directory
+      run: |
+        mkdir -p test-deployment
+        cd test-deployment
+        echo "Created test deployment directory: $(pwd)"
+
+    - name: Download setup.sh script
+      run: |
+        cd test-deployment
+        echo "Downloading setup.sh from repository..."
+        curl -L "https://raw.githubusercontent.com/zkFold/utxo-accumulator-server/main/setup.sh" -o setup.sh
+        chmod +x setup.sh
+        echo "✓ Downloaded and made setup.sh executable"
+        ls -la setup.sh
+
+    - name: Run setup script
+      run: |
+        cd test-deployment
+        echo "Running setup script..."
+        ./setup.sh
+        echo "✓ Setup script completed successfully"
+
+    - name: Verify deployment structure
+      run: |
+        cd test-deployment
+        echo "Verifying deployment structure..."
+        
+        # Check if binary exists and is executable
+        if [ -f utxo-accumulator-server ]; then
+          echo "✓ Binary 'utxo-accumulator-server' found"
+          ls -la utxo-accumulator-server
+        else
+          echo "✗ Binary 'utxo-accumulator-server' not found"
+          ls -la
+          exit 1
+        fi
+        
+        # Check if required directories and files exist
+        echo "Checking required files and directories..."
+        [ -d config ] && echo "✓ config/ directory exists" || { echo "✗ config/ directory missing"; exit 1; }
+        [ -f crs.json ] && echo "✓ crs.json exists" || { echo "✗ crs.json missing"; exit 1; }
+        [ -d database ] && echo "✓ database/ directory exists" || { echo "✗ database/ directory missing"; exit 1; }
+        [ -f database/cache.json ] && echo "✓ database/cache.json exists" || { echo "✗ database/cache.json missing"; exit 1; }
+        [ -d web/openapi ] && echo "✓ web/openapi/ directory exists" || { echo "✗ web/openapi/ directory missing"; exit 1; }
+        [ -f web/openapi/api.json ] && echo "✓ web/openapi/api.json exists" || { echo "✗ web/openapi/api.json missing"; exit 1; }
+
+    - name: Test server help command
+      run: |
+        cd test-deployment
+        echo "Testing server help command..."
+        ./utxo-accumulator-server --help
+        echo "✓ Server help command executed successfully"
+
+    - name: Test server version (if available)
+      run: |
+        cd test-deployment
+        echo "Testing server version command..."
+        # Try version command, but don't fail if it doesn't exist
+        ./utxo-accumulator-server --version || echo "Version command not available (this is okay)"
+
+    - name: Display deployment summary
+      run: |
+        cd test-deployment
+        echo "=== Deployment Test Summary ==="
+        echo "Binary size: $(du -h utxo-accumulator-server | cut -f1)"
+        echo "Config files: $(ls config/ | wc -l) files"
+        echo "Directory structure:"
+        find . -type f -name "*.json" -o -name "*.yaml" -o -name "utxo-accumulator-server" | head -20
+        echo "✓ All deployment tests passed successfully!"
