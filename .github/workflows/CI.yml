@@ -63,8 +63,6 @@ jobs:
       with:
         ghc-version: '9.6.7'
         cabal-version: '3.14.2.0'
-        enable-stack: true
-        stack-version: '2.9'
     - name: Setup cache
       uses: actions/cache@v3
       env:
