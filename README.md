@@ -103,7 +103,7 @@ The server requires several cryptographic libraries to be installed on your mach
    ```
 
 4. **Configure the server**:
-   After deployment, you need to manually update the configuration files:
+   After setup is complete, you need to manually update the configuration files:
 
    a. **Choose a configuration file** to edit (e.g., `config/100ada.yaml` for a 100 ADA pool, etc.)
 
@@ -129,7 +129,7 @@ The server requires several cryptographic libraries to be installed on your mach
    ```
 
 5. **Verify the server installation**:
-   - Check that the binary exists and is executable
+   - Check that the binary `utxo-accumulator-server` exists and is executable
    - Verify all required configuration files and directories are present:
      - `config/` directory with YAML configuration files
      - `crs.json` (common reference string for zero-knowledge proofs)
