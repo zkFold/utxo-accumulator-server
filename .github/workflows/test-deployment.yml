@@ -37,6 +37,14 @@ jobs:
         make
         sudo make install
         sudo ldconfig
+        # Debug: Check what secp256k1 libraries were installed
+        echo "Checking installed secp256k1 libraries:"
+        find /usr/lib* -name "*secp256k1*" 2>/dev/null || true
+        find /usr/local/lib* -name "*secp256k1*" 2>/dev/null || true
+        # Create symlink if needed for version compatibility
+        if [ -f /usr/lib/libsecp256k1.so.0 ] && [ ! -f /usr/lib/libsecp256k1.so.2 ]; then
+          sudo ln -sf /usr/lib/libsecp256k1.so.0 /usr/lib/libsecp256k1.so.2
+        fi
         
     - name: Install BLST
       run: |
@@ -112,6 +120,20 @@ jobs:
       run: |
         cd test-deployment
         echo "Testing server help command..."
+        
+        # Debug: Check what libraries the binary expects
+        echo "Checking binary dependencies:"
+        ldd utxo-accumulator-server | grep -E "(secp256k1|sodium|blst)" || true
+        
+        # Debug: Check available secp256k1 libraries
+        echo "Available secp256k1 libraries:"
+        find /usr/lib* /usr/local/lib* -name "*secp256k1*" 2>/dev/null || true
+        
+        # Debug: Check LD_LIBRARY_PATH
+        echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-not set}"
+        echo "Library cache contents:"
+        ldconfig -p | grep secp256k1 || echo "No secp256k1 in library cache"
+        
         ./utxo-accumulator-server --help
         echo "✓ Server help command executed successfully"
 
