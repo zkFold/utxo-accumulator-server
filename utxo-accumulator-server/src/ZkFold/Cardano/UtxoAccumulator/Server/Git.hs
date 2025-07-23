@@ -14,8 +14,7 @@ import System.Process (readProcessWithExitCode)
 -- | Check if we're in a valid git repository with the correct origin
 isValidGitRepo :: IO Bool
 isValidGitRepo = do
-  result <- catch checkGitRepo (\(_ :: SomeException) -> return False)
-  return result
+  catch checkGitRepo (\(_ :: SomeException) -> return False)
  where
   checkGitRepo = do
     -- Check if we're in a git repository
