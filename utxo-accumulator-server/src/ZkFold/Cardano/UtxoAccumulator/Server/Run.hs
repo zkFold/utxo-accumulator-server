@@ -1,5 +1,7 @@
 module ZkFold.Cardano.UtxoAccumulator.Server.Run (
   runServer,
+  postScript,
+  initAccumulator,
 ) where
 
 import Control.Concurrent (forkIO)
@@ -32,7 +34,8 @@ import ZkFold.Cardano.UtxoAccumulator.Server.Api
 import ZkFold.Cardano.UtxoAccumulator.Server.Auth
 import ZkFold.Cardano.UtxoAccumulator.Server.Config (ServerConfig (..), coreConfigFromServerConfig, serverConfigOptionalFPIO, signingKeysFromServerWallet, updateConfigYaml)
 import ZkFold.Cardano.UtxoAccumulator.Server.ErrorMiddleware
-import ZkFold.Cardano.UtxoAccumulator.Server.Options (ServerOptions (..))
+import ZkFold.Cardano.UtxoAccumulator.Server.Git (createConfigUpdatePR)
+import ZkFold.Cardano.UtxoAccumulator.Server.Options (InitAccumulatorOptions (..), PostScriptOptions (..), ServerOptions (..))
 import ZkFold.Cardano.UtxoAccumulator.Server.RSA (RSAKeyPair, generateRSAKeyPair)
 import ZkFold.Cardano.UtxoAccumulator.Server.RequestLoggerMiddleware (gcpReqLogger)
 import ZkFold.Cardano.UtxoAccumulator.Server.Utils
@@ -41,19 +44,16 @@ import ZkFold.Cardano.UtxoAccumulator.TxBuilder (initAccumulatorRun, postScriptR
 import ZkFold.Cardano.UtxoAccumulator.Types (Config (..))
 import ZkFold.Symbolic.Examples.UtxoAccumulator (UtxoAccumulatorCRS)
 
-runServer :: ServerOptions -> IO ()
-runServer ServerOptions {..} = do
-  sc@ServerConfig {..} <- serverConfigOptionalFPIO (Just soConfigPath)
+-- | Helper function to set up configuration and providers
+setupConfigAndProviders :: FilePath -> (Config -> (String -> IO ()) -> (String -> IO ()) -> ServerConfig -> IO a) -> IO a
+setupConfigAndProviders configPath action = do
+  sc@ServerConfig {..} <- serverConfigOptionalFPIO (Just configPath)
   (serverPaymentKey, serverStakeKey, serverAddr) <- fromJust <$> signingKeysFromServerWallet scNetworkId scWallet
   let coreCfg = coreConfigFromServerConfig sc
-  rsaKeyPair <- generateRSAKeyPair
-  withCfgProviders coreCfg "server" $ \providers -> do
+  withCfgProviders coreCfg "utxo-accumulator" $ \providers -> do
     let logInfoS = gyLogInfo providers mempty
         logErrorS = gyLogError providers mempty
-    logInfoS $ "UTxO Accumulator server version: " ++ showVersion PackageInfo.version
-    logInfoS $ "Database file: " ++ scDatabasePath
-    B.writeFile "web/openapi/api.yaml" (Yaml.encodePretty Yaml.defConfig utxoAccumulatorAPIOpenApi)
-    let cfg =
+        cfg =
           Config
             { cfgNetworkId = scNetworkId
             , cfgProviders = providers
@@ -67,34 +67,80 @@ runServer ServerOptions {..} = do
             , cfgMaybeScriptRef = scMaybeScriptRef
             , cfgThreadTokenRefs = scThreadTokenRefs
             }
-    crs <- utxoAccumulatorCRS
+    action cfg logInfoS logErrorS sc
 
-    -- Checking if the script is posted
-    cfg' <-
-      if isNothing scMaybeScriptRef
-        then do
-          logInfoS "Posting the UTxO Accumulator script..."
-          postScriptRun cfg
-        else return cfg
+postScript :: PostScriptOptions -> IO ()
+postScript PostScriptOptions {psoConfigPath} = setupConfigAndProviders psoConfigPath $ \cfg logInfoS _logErrorS _sc -> do
+  cfg' <- postScriptRun cfg
+  logInfoS "Accumulator script posted"
 
-    -- Checking if the accumulator is initialized
-    mRef <- threadTokenRefFromSync cfg'
-    cfg'' <-
-      if isNothing mRef
-        then do
-          logInfoS "Initializing the UTxO Accumulator..."
+  -- Update config if needed and create PR when config is updated
+  configUpdated <- updateConfigYaml psoConfigPath (cfgMaybeScriptRef cfg') (cfgThreadTokenRefs cfg')
+  when configUpdated $ do
+    logInfoS "Configuration file updated with new script reference"
+    createConfigUpdatePR psoConfigPath logInfoS
+
+initAccumulator :: InitAccumulatorOptions -> IO ()
+initAccumulator InitAccumulatorOptions {..} = setupConfigAndProviders iaoConfigPath $ \cfg logInfoS _logErrorS _sc -> do
+  logInfoS $ "UTxO Accumulator initialization command (creating " ++ show iaoNumTokens ++ " thread tokens)"
+
+  logInfoS $ "Initializing the UTxO Accumulator with " ++ show iaoNumTokens ++ " thread tokens..."
+  crs <- utxoAccumulatorCRS
+
+  -- Call initAccumulatorRun exactly iaoNumTokens times
+  finalCfg <-
+    foldM
+      ( \cfg' i -> do
+          logInfoS $ "Creating thread token " ++ show i ++ "/" ++ show iaoNumTokens
           initAccumulatorRun crs cfg'
-        else return cfg'
-    ref <- fromJust <$> threadTokenRefFromSync cfg''
+      )
+      cfg
+      [1 .. iaoNumTokens]
 
-    -- Update config file with maybeScriptRef and maybeThreadTokenRef values
-    updateConfigYaml soConfigPath (cfgMaybeScriptRef cfg') (cfgThreadTokenRefs cfg'')
+  -- Update config file with the new thread token references
+  configUpdated <- updateConfigYaml iaoConfigPath (cfgMaybeScriptRef finalCfg) (cfgThreadTokenRefs finalCfg)
 
-    -- Start the distribution thread
-    _ <- forkIO $ distributionThread crs cfg'' soForceDistribute soCleanDb logInfoS scDatabasePath
+  -- Create PR if config was updated
+  when configUpdated $ do
+    logInfoS "Config file was updated with new thread token references"
+    createConfigUpdatePR iaoConfigPath logInfoS
 
-    -- Start the accumulation thread (main thread)
-    accumulationThread rsaKeyPair crs cfg'' ref scServerApiKey scPort coreCfg logInfoS logErrorS
+  logInfoS $ "Accumulator initialization completed successfully! Created " ++ show iaoNumTokens ++ " thread tokens."
+
+runServer :: ServerOptions -> IO ()
+runServer ServerOptions {..} = setupConfigAndProviders soConfigPath $ \cfg logInfoS logErrorS sc@ServerConfig {..} -> do
+  rsaKeyPair <- generateRSAKeyPair
+
+  logInfoS $ "UTxO Accumulator server version: " ++ showVersion PackageInfo.version
+  logInfoS $ "Database file: " ++ scDatabasePath
+  B.writeFile "web/openapi/api.yaml" (Yaml.encodePretty Yaml.defConfig utxoAccumulatorAPIOpenApi)
+
+  -- Check if script is posted
+  if isNothing scMaybeScriptRef
+    then do
+      logErrorS "ERROR: Script must be posted before running the server!"
+      logErrorS "Please run: utxo-accumulator-server post-script --config <config-file>"
+      error "Script not posted"
+    else logInfoS "✓ Script is posted"
+
+  -- Check if accumulator is initialized
+  mRef <- threadTokenRefFromSync cfg
+  if isNothing mRef
+    then do
+      logErrorS "ERROR: Accumulator must be initialized before running the server!"
+      logErrorS "Please run: utxo-accumulator-server init --config <config-file>"
+      error "Accumulator not initialized"
+    else logInfoS "✓ Accumulator is initialized"
+
+  ref <- fromJust <$> threadTokenRefFromSync cfg
+  crs <- utxoAccumulatorCRS
+  let coreCfg = coreConfigFromServerConfig sc
+
+  -- Start the distribution thread
+  _ <- forkIO $ distributionThread crs cfg soForceDistribute soCleanDb logInfoS scDatabasePath
+
+  -- Start the accumulation thread (main thread)
+  accumulationThread rsaKeyPair crs cfg ref scServerApiKey scPort coreCfg logInfoS logErrorS
 
 accumulationThread :: RSAKeyPair -> UtxoAccumulatorCRS -> Config -> GYTxOutRef -> Confidential T.Text -> Int -> GYCoreConfig -> (String -> IO ()) -> (String -> IO ()) -> IO ()
 accumulationThread rsaKeyPair crs cfg ref serverApiKey port coreCfg logInfoS logErrorS = do

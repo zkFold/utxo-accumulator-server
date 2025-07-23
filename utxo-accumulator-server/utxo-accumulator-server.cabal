@@ -44,6 +44,7 @@ library
     ZkFold.Cardano.UtxoAccumulator.Server.Auth
     ZkFold.Cardano.UtxoAccumulator.Server.Config
     ZkFold.Cardano.UtxoAccumulator.Server.ErrorMiddleware
+    ZkFold.Cardano.UtxoAccumulator.Server.Git
     ZkFold.Cardano.UtxoAccumulator.Server.Options
     ZkFold.Cardano.UtxoAccumulator.Server.Orphans
     ZkFold.Cardano.UtxoAccumulator.Server.RequestLoggerMiddleware
@@ -76,6 +77,7 @@ library
     , mtl
     , openapi3
     , optparse-applicative
+    , process
     , servant-foreign
     , servant-openapi3
     , servant-server

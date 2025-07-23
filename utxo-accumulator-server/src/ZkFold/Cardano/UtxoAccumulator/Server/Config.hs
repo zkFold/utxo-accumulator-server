@@ -139,8 +139,10 @@ signingKeysFromServerWallet nid (KeyPathWallet fp) = do
             AGYExtendedStakeSigningKey skey' -> getExtendedVerificationKey skey' & extendedVerificationKeyHash
      in addressFromCredential nid (GYPaymentCredentialByKey pkh) (Just $ GYStakeCredentialByKey skh)
 
--- | Update config file with new maybeScriptRef and threadTokenRefs values.
-updateConfigYaml :: FilePath -> Maybe GYTxOutRef -> [GYTxOutRef] -> IO ()
+{- | Update config file with new maybeScriptRef and threadTokenRefs values.
+Returns True if the file was actually updated, False otherwise.
+-}
+updateConfigYaml :: FilePath -> Maybe GYTxOutRef -> [GYTxOutRef] -> IO Bool
 updateConfigYaml configPath mScriptRef threadTokenRefs = do
   mVal <-
     Yaml.decodeFileEither configPath >>= \case
@@ -151,5 +153,10 @@ updateConfigYaml configPath mScriptRef threadTokenRefs = do
       newObj =
         updateField "maybeScriptRef" mScriptRef $
           updateField "threadTokenRefs" threadTokenRefs obj
-  withFile configPath WriteMode $ \h ->
-    B.hPut h (YamlPretty.encodePretty YamlPretty.defConfig newObj)
+  -- Check if the content actually changed
+  if obj == newObj
+    then return False -- No change needed
+    else do
+      withFile configPath WriteMode $ \h ->
+        B.hPut h (YamlPretty.encodePretty YamlPretty.defConfig newObj)
+      return True -- File was updated
