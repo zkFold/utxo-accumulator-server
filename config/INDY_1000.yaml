@@ -15,6 +15,8 @@ networkId: preprod
 port: 8084
 serverApiKey: '123456'
 threadTokenRefs:
+- 0095653968000517d07e0aa37ad66e66f0e8efed3869dc432c7af507319d8a2e#2
+- 9f7c15b7ec3c7294d88b37c604f6a7081880c8d2d5f113e6101ae935f1a07e47#2
 - b40f2e35bc71664d9c19bbc14189fad7a4baf80f3b3163eb2c5cdb3d37caed3b#1
 wallet:
   contents:
