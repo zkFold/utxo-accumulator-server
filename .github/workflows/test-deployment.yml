@@ -10,13 +10,24 @@ on:
 
 jobs:
   test-deployment:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
     
-    - name: Install SEPC256K1
+    - name: Install LIBSODIUM
+      run: |
+        git clone https://github.com/input-output-hk/libsodium
+        cd libsodium
+        git checkout dbb48cc
+        ./autogen.sh
+        ./configure
+        make
+        sudo make install
+        sudo ldconfig
+        
+    - name: Install SECP256K1
       run: |
         git clone https://github.com/bitcoin-core/secp256k1
         cd secp256k1
@@ -26,6 +37,30 @@ jobs:
         make
         sudo make install
         sudo ldconfig
+        
+    - name: Install BLST
+      run: |
+        : ${BLST_VERSION:='v0.3.11'}
+        git clone --depth 1 --branch ${BLST_VERSION} https://github.com/supranational/blst
+        cd blst
+        ./build.sh
+        cat > libblst.pc << EOF
+        prefix=/usr/local
+        exec_prefix=\${prefix}
+        libdir=\${exec_prefix}/lib
+        includedir=\${prefix}/include
+
+        Name: libblst
+        Description: Multilingual BLS12-381 signature library
+        URL: https://github.com/supranational/blst
+        Version: ${BLST_VERSION#v}
+        Cflags: -I\${includedir}
+        Libs: -L\${libdir} -lblst
+        EOF
+        sudo cp libblst.pc /usr/local/lib/pkgconfig/
+        sudo cp bindings/blst_aux.h bindings/blst.h bindings/blst.hpp  /usr/local/include/
+        sudo cp libblst.a /usr/local/lib
+        sudo chmod u=rw,go=r /usr/local/{lib/{libblst.a,pkgconfig/libblst.pc},include/{blst.{h,hpp},blst_aux.h}}
 
     - name: Create test deployment directory
       run: |
