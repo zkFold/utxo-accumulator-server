@@ -2,12 +2,60 @@ servers:
 - name: Primary Relay
   url: http://ec2-3-76-34-185.eu-central-1.compute.amazonaws.com
   port: 8082
-  aws_api_url: https://mzym8748z9.execute-api.eu-central-1.amazonaws.com/
+  aws_api_url: https://c0aoqcb536.execute-api.eu-central-1.amazonaws.com/
 - name: Primary Relay
   url: http://ec2-3-76-34-185.eu-central-1.compute.amazonaws.com
   port: 8083
-  aws_api_url: https://5km07fbyd1.execute-api.eu-central-1.amazonaws.com/
+  aws_api_url: https://25h2t2prt9.execute-api.eu-central-1.amazonaws.com/
 - name: Primary Relay
   url: http://ec2-3-76-34-185.eu-central-1.compute.amazonaws.com
   port: 8084
-  aws_api_url: https://mzytvtva46.execute-api.eu-central-1.amazonaws.com/
+  aws_api_url: https://maj4gx1qpi.execute-api.eu-central-1.amazonaws.com/
+- name: BURN_100a
+  url: encoins.reservoir.network
+  port: 4011
+  aws_api_url: https://81xn7m4438.execute-api.eu-central-1.amazonaws.com/
+- name: BURN_1000a
+  url: encoins.reservoir.network
+  port: 4010
+  aws_api_url: https://nalz2r5ucj.execute-api.eu-central-1.amazonaws.com/
+- name: BURN_1000i
+  url: encoins.reservoir.network
+  port: 4012
+  aws_api_url: https://mj4pxfy4bb.execute-api.eu-central-1.amazonaws.com/
+- name: gwaqi
+  url: utxo.date
+  port: 3010
+  aws_api_url: https://r1qakoyzwb.execute-api.eu-central-1.amazonaws.com/
+- name: gwaqi
+  url: utxo.date
+  port: 3011
+  aws_api_url: https://x7cbitofz4.execute-api.eu-central-1.amazonaws.com/
+- name: gwaqi
+  url: utxo.date
+  port: 3012
+  aws_api_url: https://ei3v7oyst9.execute-api.eu-central-1.amazonaws.com/
+- name: Hispano100a
+  url: 167.86.93.5
+  port: 4010
+  aws_api_url: https://heudpdra43.execute-api.eu-central-1.amazonaws.com/
+- name: Hispano1000a
+  url: 167.86.93.5
+  port: 4011
+  aws_api_url: https://5mjcegzpv5.execute-api.eu-central-1.amazonaws.com/
+- name: Hispano1000i
+  url: 167.86.93.5
+  port: 4012
+  aws_api_url: https://hfueckwiu0.execute-api.eu-central-1.amazonaws.com/
+- name: saribuah
+  url: lovelace.uno
+  port: 3010
+  aws_api_url: https://sa1i4ovf62.execute-api.eu-central-1.amazonaws.com/
+- name: saribuah
+  url: lovelace.uno
+  port: 3011
+  aws_api_url: https://61smgl8hjc.execute-api.eu-central-1.amazonaws.com/
+- name: saribuah
+  url: lovelace.uno
+  port: 3012
+  aws_api_url: https://zuugmdh7fl.execute-api.eu-central-1.amazonaws.com/
